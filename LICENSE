@@ -1,0 +1,47 @@
+Modkit — In-game Minecraft modding engine
+Copyright (C) 2026 deadlyhunter
+
+This library is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License version 3
+as published by the Free Software Foundation.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this library; if not, see <https://www.gnu.org/licenses/lgpl-3.0.html>.
+
+Full license text: https://www.gnu.org/licenses/lgpl-3.0.txt
+
+
+--- WHAT THIS MEANS IN PLAIN ENGLISH ---
+
+You can:
+  - Use Modkit freely, including in commercial Minecraft modpacks
+  - Distribute Modkit as part of your modpack
+  - Build mods on top of Modkit and license those mods however you want
+    (this is the key LGPL distinction — only Modkit itself is LGPL,
+    not the mods you create with it)
+
+You must:
+  - Keep this license notice when redistributing Modkit itself
+  - Make source code of any MODIFICATIONS to Modkit itself available
+    if you redistribute a modified version
+  - Not relicense Modkit itself under a different license
+
+You may NOT:
+  - Claim Modkit as your own work
+  - Remove or hide the LGPL notice when redistributing
+
+
+--- MODS YOU CREATE WITH MODKIT ---
+
+When you click "Export" in Modkit and ship a .jar to other players, that
+output jar contains YOUR content (JSON definitions, textures). The license
+of THAT mod is whatever you set in the Project Settings of your workspace.
+
+Modkit only acts as a runtime engine — your output mods depend on Modkit
+but don't include any of its source code, which is why your mods can be
+licensed independently of LGPL.
