@@ -36,6 +36,10 @@ public class ModkitProject {
 
     public final List<RegistryObject<net.minecraft.world.item.Item>> registeredTools = new ArrayList<>();
 
+    public final List<com.deadlyhunter.modkit.content.armor.ArmorSetDefinition> armorSetDefinitions = new ArrayList<>();
+
+    public final List<RegistryObject<com.deadlyhunter.modkit.content.armor.ModkitArmorItem>> registeredArmor = new ArrayList<>();
+
     public ModkitProject(String modId, String displayName, String author) {
         this.modId = modId;
         this.displayName = displayName;
@@ -54,9 +58,13 @@ public class ModkitProject {
     public List<com.deadlyhunter.modkit.content.tool.ToolDefinition> getToolDefinitions() {
         return Collections.unmodifiableList(toolDefinitions);
     }
+    public List<com.deadlyhunter.modkit.content.armor.ArmorSetDefinition> getArmorSetDefinitions() {
+        return Collections.unmodifiableList(armorSetDefinitions);
+    }
 
     public boolean isEmpty() {
         return itemDefinitions.isEmpty() && blockDefinitions.isEmpty()
-                && weaponDefinitions.isEmpty() && toolDefinitions.isEmpty();
+                && weaponDefinitions.isEmpty() && toolDefinitions.isEmpty()
+                && armorSetDefinitions.isEmpty();
     }
 }

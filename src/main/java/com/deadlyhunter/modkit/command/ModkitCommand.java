@@ -158,7 +158,8 @@ public final class ModkitCommand {
         sendSuccess(source, "Exported '" + modName + ".jar' ("
                 + result.itemCount + " items, " + result.blockCount + " blocks, "
                 + result.oreCount + " ores, " + result.recipeCount + " recipes, "
-                + result.weaponCount + " weapons, " + result.toolCount + " tools)");
+                + result.weaponCount + " weapons, " + result.toolCount + " tools, "
+                + result.armorSetCount + " armor sets)");
         sendClickablePath(source, "File: ", result.jarPath);
         sendClickablePath(source, "Folder: ", result.jarPath.getParent());
         if (!result.warnings.isEmpty()) {

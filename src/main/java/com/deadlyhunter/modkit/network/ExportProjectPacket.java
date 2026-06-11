@@ -10,7 +10,6 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-
 import java.util.function.Supplier;
 
 public class ExportProjectPacket {
@@ -53,7 +52,8 @@ public class ExportProjectPacket {
                 "§a[Modkit] Exported '" + pkt.modName + ".jar' ("
                         + result.itemCount + " items, " + result.blockCount + " blocks, "
                         + result.oreCount + " ores, " + result.recipeCount + " recipes, "
-                        + result.weaponCount + " weapons, " + result.toolCount + " tools)"));
+                        + result.weaponCount + " weapons, " + result.toolCount + " tools, "
+                        + result.armorSetCount + " armor sets)"));
 
         String absPath = result.jarPath.toAbsolutePath().toString();
         MutableComponent link = Component.literal("§7File: §r")

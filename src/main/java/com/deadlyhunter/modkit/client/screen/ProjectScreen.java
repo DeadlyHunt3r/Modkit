@@ -56,7 +56,8 @@ public class ProjectScreen extends ModkitBaseScreen {
         addActive("Settings", rightX, startY + 3 * rowSpacing, colW, colH,
                 () -> this.minecraft.setScreen(new ProjectSettingsScreen(this, modName)));
 
-        addComingSoon("Armor", centerX - colW / 2, startY + 4 * rowSpacing, colW, colH);
+        addActive("Armor", centerX - colW / 2, startY + 4 * rowSpacing, colW, colH,
+                () -> this.minecraft.setScreen(new ArmorListScreen(this, modName)));
 
         int footerY = panelY + panelH - 30;
         this.addRenderableWidget(Button.builder(

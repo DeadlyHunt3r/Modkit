@@ -192,7 +192,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
 
             int topRightX = panelX + panelW - 12;
             int topRightY = panelY + 6;
-            // Copy (rightmost)
+
             this.addRenderableWidget(Button.builder(
                     Component.literal("Copy"),
                     btn -> duplicateBlock()

@@ -17,10 +17,10 @@ public class OreDefinition {
     public String blockId;
 
     @SerializedName("dimension")
-    public String dimension = "overworld"; // "overworld" | "nether" | "end"
+    public String dimension = "overworld";
 
     @SerializedName("replaces")
-    public String replaces = "stone"; // "stone" | "deepslate" | "both"
+    public String replaces = "stone";
 
     @SerializedName("min_y")
     public int minY = -64;

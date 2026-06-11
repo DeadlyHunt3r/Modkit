@@ -82,6 +82,8 @@ public final class WorkspaceManager {
             Files.createDirectories(workspace.resolve("modkit").resolve("recipes"));
             Files.createDirectories(workspace.resolve("modkit").resolve("weapons"));
             Files.createDirectories(workspace.resolve("modkit").resolve("tools"));
+            Files.createDirectories(workspace.resolve("modkit").resolve("armor"));
+            Files.createDirectories(workspace.resolve("assets").resolve("textures").resolve("armor"));
 
             ProjectInfo info = new ProjectInfo(author, modName);
             Files.writeString(workspace.resolve("project_info.json"), GSON.toJson(info));

@@ -79,6 +79,18 @@ public final class ProjectRegistry {
             project.registeredTools.add(toolRo);
         }
 
+        for (com.deadlyhunter.modkit.content.armor.ArmorSetDefinition def : project.armorSetDefinitions) {
+            final com.deadlyhunter.modkit.content.armor.ModkitArmorMaterial material =
+                    new com.deadlyhunter.modkit.content.armor.ModkitArmorMaterial(project.modId, def);
+            for (String pieceType : com.deadlyhunter.modkit.content.armor.ArmorSetDefinition.PIECE_TYPES) {
+                if (!def.hasPiece(pieceType)) continue;
+                final String pt = pieceType;
+                RegistryObject<com.deadlyhunter.modkit.content.armor.ModkitArmorItem> armorRo =
+                        items.register(def.pieceItemId(pieceType),
+                                () -> new com.deadlyhunter.modkit.content.armor.ModkitArmorItem(def, material, pt));
+                project.registeredArmor.add(armorRo);
+            }
+        }
         if (!project.isEmpty()) {
             tabs.register("main", () ->
                     CreativeModeTab.builder()
@@ -102,6 +114,11 @@ public final class ProjectRegistry {
                                 for (RegistryObject<Item> ro : project.registeredTools) {
                                     out.accept(ro.get());
                                 }
+
+                                for (RegistryObject<com.deadlyhunter.modkit.content.armor.ModkitArmorItem> ro
+                                        : project.registeredArmor) {
+                                    out.accept(ro.get());
+                                }
                             })
                             .build()
             );
@@ -115,12 +132,13 @@ public final class ProjectRegistry {
         BLOCK_REGISTERS.put(project.modId, blocks);
         TAB_REGISTERS.put(project.modId, tabs);
 
-        Modkit.LOGGER.info("[Modkit] Prepared registry for '{}' — {} item(s), {} block(s), {} weapon(s), {} tool(s)",
+        Modkit.LOGGER.info("[Modkit] Prepared registry for '{}' — {} item(s), {} block(s), {} weapon(s), {} tool(s), {} armor set(s)",
                 project.modId,
                 project.itemDefinitions.size(),
                 project.blockDefinitions.size(),
                 project.weaponDefinitions.size(),
-                project.toolDefinitions.size());
+                project.toolDefinitions.size(),
+                project.armorSetDefinitions.size());
     }
 
     private static ItemStack pickTabIcon(ModkitProject p) {

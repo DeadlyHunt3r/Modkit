@@ -21,12 +21,12 @@ public final class ModNetworking {
     private ModNetworking() {}
 
     public static void register() {
-
         CHANNEL.messageBuilder(OpenModkitGuiPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(OpenModkitGuiPacket::encode)
                 .decoder(OpenModkitGuiPacket::decode)
                 .consumerMainThread(OpenModkitGuiPacket::handle)
                 .add();
+
         CHANNEL.messageBuilder(SaveItemPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SaveItemPacket::encode)
                 .decoder(SaveItemPacket::decode)
@@ -42,6 +42,7 @@ public final class ModNetworking {
                 .decoder(SetTexturePacket::decode)
                 .consumerMainThread(SetTexturePacket::handle)
                 .add();
+
         CHANNEL.messageBuilder(SaveBlockPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SaveBlockPacket::encode)
                 .decoder(SaveBlockPacket::decode)
@@ -57,6 +58,7 @@ public final class ModNetworking {
                 .decoder(SetBlockTexturePacket::decode)
                 .consumerMainThread(SetBlockTexturePacket::handle)
                 .add();
+
         CHANNEL.messageBuilder(SaveOrePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SaveOrePacket::encode)
                 .decoder(SaveOrePacket::decode)
@@ -67,6 +69,7 @@ public final class ModNetworking {
                 .decoder(DeleteOrePacket::decode)
                 .consumerMainThread(DeleteOrePacket::handle)
                 .add();
+
         CHANNEL.messageBuilder(SaveRecipePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SaveRecipePacket::encode)
                 .decoder(SaveRecipePacket::decode)
@@ -77,6 +80,7 @@ public final class ModNetworking {
                 .decoder(DeleteRecipePacket::decode)
                 .consumerMainThread(DeleteRecipePacket::handle)
                 .add();
+
         CHANNEL.messageBuilder(SaveWeaponPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SaveWeaponPacket::encode)
                 .decoder(SaveWeaponPacket::decode)
@@ -87,6 +91,7 @@ public final class ModNetworking {
                 .decoder(DeleteWeaponPacket::decode)
                 .consumerMainThread(DeleteWeaponPacket::handle)
                 .add();
+
         CHANNEL.messageBuilder(SaveToolPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SaveToolPacket::encode)
                 .decoder(SaveToolPacket::decode)
@@ -97,6 +102,23 @@ public final class ModNetworking {
                 .decoder(DeleteToolPacket::decode)
                 .consumerMainThread(DeleteToolPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(SaveArmorPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SaveArmorPacket::encode)
+                .decoder(SaveArmorPacket::decode)
+                .consumerMainThread(SaveArmorPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(DeleteArmorPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DeleteArmorPacket::encode)
+                .decoder(DeleteArmorPacket::decode)
+                .consumerMainThread(DeleteArmorPacket::handle)
+                .add();
+        CHANNEL.messageBuilder(SetArmorTexturePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SetArmorTexturePacket::encode)
+                .decoder(SetArmorTexturePacket::decode)
+                .consumerMainThread(SetArmorTexturePacket::handle)
+                .add();
+
         CHANNEL.messageBuilder(SetAuthorPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(SetAuthorPacket::encode)
                 .decoder(SetAuthorPacket::decode)

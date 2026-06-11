@@ -53,10 +53,10 @@ public abstract class ModkitBaseScreen extends Screen {
         final int sx = 0;
         final int sy = 0;
 
-        gfx.blit(INVENTORY_TEX, x,                 y,                 sx,                 sy,                 BORDER, BORDER, 256, 256); // TL
-        gfx.blit(INVENTORY_TEX, x + w - BORDER,    y,                 sx + SRC_W - BORDER, sy,                BORDER, BORDER, 256, 256); // TR
-        gfx.blit(INVENTORY_TEX, x,                 y + h - BORDER,    sx,                 sy + SRC_H - BORDER, BORDER, BORDER, 256, 256); // BL
-        gfx.blit(INVENTORY_TEX, x + w - BORDER,    y + h - BORDER,    sx + SRC_W - BORDER, sy + SRC_H - BORDER, BORDER, BORDER, 256, 256); // BR
+        gfx.blit(INVENTORY_TEX, x,                 y,                 sx,                 sy,                 BORDER, BORDER, 256, 256);
+        gfx.blit(INVENTORY_TEX, x + w - BORDER,    y,                 sx + SRC_W - BORDER, sy,                BORDER, BORDER, 256, 256);
+        gfx.blit(INVENTORY_TEX, x,                 y + h - BORDER,    sx,                 sy + SRC_H - BORDER, BORDER, BORDER, 256, 256);
+        gfx.blit(INVENTORY_TEX, x + w - BORDER,    y + h - BORDER,    sx + SRC_W - BORDER, sy + SRC_H - BORDER, BORDER, BORDER, 256, 256);
 
         final int innerW = w - 2 * BORDER;
         final int innerH = h - 2 * BORDER;

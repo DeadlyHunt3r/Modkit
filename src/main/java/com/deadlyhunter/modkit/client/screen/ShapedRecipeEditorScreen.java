@@ -73,7 +73,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
                 if (ch == ' ') continue;
                 Ingredient ing = def.ingredients.get(String.valueOf(ch));
                 if (ing != null && !ing.isEmpty()) {
-                    slots[r * 3 + c] = new Ingredient(ing.source, ing.id); // copy
+                    slots[r * 3 + c] = new Ingredient(ing.source, ing.id);
                 }
             }
         }
@@ -181,7 +181,6 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
     }
 
     private String letterForIngredient(Ingredient ing) {
-        // Build map ingredient → letter on the fly based on first-encounter order
         Map<String, Character> assigned = new LinkedHashMap<>();
         char nextLetter = 'X';
         for (Ingredient s : slots) {

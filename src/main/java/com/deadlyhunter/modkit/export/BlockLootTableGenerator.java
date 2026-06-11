@@ -49,7 +49,6 @@ public final class BlockLootTableGenerator {
     public static String generateItemDrop(String modId, BlockDefinition def, String fullDropId) {
         StringBuilder functions = new StringBuilder();
 
-        // Min/max count function
         if (def.dropMin != 1 || def.dropMax != 1) {
             functions.append("""
                             {

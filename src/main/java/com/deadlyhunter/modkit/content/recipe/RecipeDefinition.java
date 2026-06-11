@@ -50,7 +50,7 @@ public class RecipeDefinition {
 
     public static class Ingredient {
         @SerializedName("source")
-        public String source = "other"; // "mine" | "other"
+        public String source = "other";
 
         @SerializedName("id")
         public String id = "";

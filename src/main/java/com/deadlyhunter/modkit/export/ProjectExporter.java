@@ -7,7 +7,6 @@ import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import net.minecraftforge.fml.loading.FMLPaths;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -42,6 +41,7 @@ public final class ProjectExporter {
         List<com.deadlyhunter.modkit.content.recipe.RecipeDefinition> recipes = loadRecipes(workspace);
         List<com.deadlyhunter.modkit.content.weapon.WeaponDefinition> weapons = loadWeapons(workspace);
         List<com.deadlyhunter.modkit.content.tool.ToolDefinition> tools = loadTools(workspace);
+        List<com.deadlyhunter.modkit.content.armor.ArmorSetDefinition> armorSets = loadArmorSets(workspace);
         List<String> warnings = new ArrayList<>();
 
         try {
@@ -57,7 +57,7 @@ public final class ProjectExporter {
 
                 writeEntry(zip,
                         "assets/" + info.modId + "/lang/en_us.json",
-                        LangGenerator.generate(info, items, blocks, weapons, tools));
+                        LangGenerator.generate(info, items, blocks, weapons, tools, armorSets));
 
                 Set<String> writtenAssetPaths = new HashSet<>();
 
@@ -113,6 +113,46 @@ public final class ProjectExporter {
                     }
                     writtenAssetPaths.add("textures/item/" + def.id + ".png");
                     writtenAssetPaths.add("models/item/" + def.id + ".json");
+                }
+
+                Path workspaceArmorTexDir = workspace.resolve("assets").resolve("textures").resolve("armor");
+                for (com.deadlyhunter.modkit.content.armor.ArmorSetDefinition def : armorSets) {
+                    for (String pieceType : com.deadlyhunter.modkit.content.armor.ArmorSetDefinition.PIECE_TYPES) {
+                        if (!def.hasPiece(pieceType)) continue;
+                        String pieceId = def.pieceItemId(pieceType);
+                        Path userTex = workspaceItemTexDir.resolve(pieceId + ".png");
+                        String modelPath = "assets/" + info.modId + "/models/item/" + pieceId + ".json";
+
+                        if (Files.isRegularFile(userTex)) {
+                            String texPath = "assets/" + info.modId + "/textures/item/" + pieceId + ".png";
+                            writeBinary(zip, texPath, Files.readAllBytes(userTex));
+                            writeEntry(zip, modelPath,
+                                    ItemModelGenerator.generateWithTexture(info.modId, pieceId));
+                        } else {
+                            writeEntry(zip, modelPath, ItemModelGenerator.generateFallback(pieceId));
+                            warnings.add("Armor piece '" + pieceId + "' has no icon texture — using fallback.");
+                        }
+                        writtenAssetPaths.add("textures/item/" + pieceId + ".png");
+                        writtenAssetPaths.add("models/item/" + pieceId + ".json");
+                    }
+
+                    for (int layer = 1; layer <= 2; layer++) {
+                        String layerFile = def.id + "_layer_" + layer + ".png";
+                        Path userLayer = workspaceArmorTexDir.resolve(layerFile);
+                        if (Files.isRegularFile(userLayer)) {
+                            writeBinary(zip,
+                                    "assets/" + info.modId + "/textures/models/armor/" + layerFile,
+                                    Files.readAllBytes(userLayer));
+                        } else {
+
+                            boolean needed = (layer == 1 && (def.hasHelmet || def.hasChestplate || def.hasBoots))
+                                    || (layer == 2 && def.hasLeggings);
+                            if (needed) {
+                                warnings.add("Armor set '" + def.id + "' is missing " + layerFile
+                                        + " — pieces will render invisible when worn.");
+                            }
+                        }
+                    }
                 }
 
                 Path workspaceBlockTexDir = workspace.resolve("assets").resolve("textures").resolve("block");
@@ -196,7 +236,7 @@ public final class ProjectExporter {
                     StandardCopyOption.ATOMIC_MOVE);
 
             return ExportResult.success(finalJar, items.size(), blocks.size(), ores.size(),
-                    recipes.size(), weapons.size(), tools.size(), warnings);
+                    recipes.size(), weapons.size(), tools.size(), armorSets.size(), warnings);
 
         } catch (IOException e) {
             Modkit.LOGGER.error("[Modkit] Export failed for " + modName, e);
@@ -239,6 +279,12 @@ public final class ProjectExporter {
         return loadDefs(workspace.resolve("modkit").resolve("tools"),
                 com.deadlyhunter.modkit.content.tool.ToolDefinition.class,
                 com.deadlyhunter.modkit.content.tool.ToolDefinition::validate);
+    }
+
+    private static List<com.deadlyhunter.modkit.content.armor.ArmorSetDefinition> loadArmorSets(Path workspace) {
+        return loadDefs(workspace.resolve("modkit").resolve("armor"),
+                com.deadlyhunter.modkit.content.armor.ArmorSetDefinition.class,
+                com.deadlyhunter.modkit.content.armor.ArmorSetDefinition::validate);
     }
 
     private static <T> List<T> loadDefs(Path dir, Class<T> cls,
@@ -334,11 +380,13 @@ public final class ProjectExporter {
         public final int recipeCount;
         public final int weaponCount;
         public final int toolCount;
+        public final int armorSetCount;
         public final List<String> warnings;
 
         private ExportResult(boolean success, String message, Path jarPath,
                              int itemCount, int blockCount, int oreCount, int recipeCount,
-                             int weaponCount, int toolCount, List<String> warnings) {
+                             int weaponCount, int toolCount, int armorSetCount,
+                             List<String> warnings) {
             this.success = success;
             this.message = message;
             this.jarPath = jarPath;
@@ -348,18 +396,20 @@ public final class ProjectExporter {
             this.recipeCount = recipeCount;
             this.weaponCount = weaponCount;
             this.toolCount = toolCount;
+            this.armorSetCount = armorSetCount;
             this.warnings = warnings == null ? List.of() : warnings;
         }
 
         public static ExportResult success(Path jar, int itemCount, int blockCount, int oreCount,
                                             int recipeCount, int weaponCount, int toolCount,
-                                            List<String> warnings) {
+                                            int armorSetCount, List<String> warnings) {
             return new ExportResult(true, "Export successful.", jar,
-                    itemCount, blockCount, oreCount, recipeCount, weaponCount, toolCount, warnings);
+                    itemCount, blockCount, oreCount, recipeCount, weaponCount, toolCount,
+                    armorSetCount, warnings);
         }
 
         public static ExportResult failure(String message) {
-            return new ExportResult(false, message, null, 0, 0, 0, 0, 0, 0, List.of());
+            return new ExportResult(false, message, null, 0, 0, 0, 0, 0, 0, 0, List.of());
         }
     }
 }

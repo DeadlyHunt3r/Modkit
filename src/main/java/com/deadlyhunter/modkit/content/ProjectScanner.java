@@ -8,7 +8,6 @@ import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModInfo;
-
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -68,6 +67,7 @@ public final class ProjectScanner {
             loadRecipes(project, modRoot.resolve("modkit").resolve("recipes"), "jar:" + modId);
             loadWeapons(project, modRoot.resolve("modkit").resolve("weapons"), "jar:" + modId);
             loadTools(project, modRoot.resolve("modkit").resolve("tools"), "jar:" + modId);
+            loadArmor(project, modRoot.resolve("modkit").resolve("armor"), "jar:" + modId);
             return project;
         } catch (Exception e) {
             Modkit.LOGGER.error("[Modkit] Failed to scan jar mod '" + modId + "'", e);
@@ -87,6 +87,7 @@ public final class ProjectScanner {
         loadRecipes(project, wsPath.resolve("modkit").resolve("recipes"), "ws:" + wsName);
         loadWeapons(project, wsPath.resolve("modkit").resolve("weapons"), "ws:" + wsName);
         loadTools(project, wsPath.resolve("modkit").resolve("tools"), "ws:" + wsName);
+        loadArmor(project, wsPath.resolve("modkit").resolve("armor"), "ws:" + wsName);
         return project;
     }
 
@@ -136,6 +137,14 @@ public final class ProjectScanner {
                 def -> def.id,
                 com.deadlyhunter.modkit.content.tool.ToolDefinition::validate,
                 project.toolDefinitions::add);
+    }
+
+    private static void loadArmor(ModkitProject project, Path armorDir, String sourceTag) {
+        loadDefs(armorDir, sourceTag, project.modId, "armor",
+                com.deadlyhunter.modkit.content.armor.ArmorSetDefinition.class,
+                def -> def.id,
+                com.deadlyhunter.modkit.content.armor.ArmorSetDefinition::validate,
+                project.armorSetDefinitions::add);
     }
 
     private static <T> void loadDefs(Path dir,
