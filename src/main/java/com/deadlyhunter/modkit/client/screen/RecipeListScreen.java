@@ -31,7 +31,7 @@ public class RecipeListScreen extends ModkitBaseScreen {
         super(Component.literal("Recipes — " + modName), parent);
         this.modName = modName;
         this.panelW = 260;
-        this.panelH = 252;
+        this.panelH = 276;
     }
 
     @Override
@@ -99,7 +99,7 @@ public class RecipeListScreen extends ModkitBaseScreen {
             this.addRenderableWidget(down);
         }
 
-        int footerY = panelY + panelH - 74;
+        int footerY = panelY + panelH - 96;
         int btnW = 72;
         int gap = 4;
         int row1X = centerX - (btnW * 3 + gap * 2) / 2;
@@ -135,9 +135,14 @@ public class RecipeListScreen extends ModkitBaseScreen {
         ).bounds(row1X + 2 * (btnW + gap), footerY + 22, btnW, 20).build());
 
         this.addRenderableWidget(Button.builder(
+                Component.literal("+ Smithing"),
+                btn -> openEditor(blank("smithing"), true)
+        ).bounds(row1X + btnW + gap, footerY + 44, btnW, 20).build());
+
+        this.addRenderableWidget(Button.builder(
                 Component.literal("Back"),
                 btn -> this.onClose()
-        ).bounds(centerX - 50, footerY + 48, 100, 20).build());
+        ).bounds(centerX - 50, footerY + 70, 100, 20).build());
     }
 
     private void openEditor(RecipeDefinition def, boolean isNew) {
@@ -147,6 +152,7 @@ public class RecipeListScreen extends ModkitBaseScreen {
             case "smelting", "blasting", "smoking" ->
                     this.minecraft.setScreen(new SmeltingRecipeEditorScreen(this, modName, def, isNew));
             case "stonecutting" -> this.minecraft.setScreen(new StonecuttingRecipeEditorScreen(this, modName, def, isNew));
+            case "smithing"     -> this.minecraft.setScreen(new SmithingRecipeEditorScreen(this, modName, def, isNew));
         }
     }
 
@@ -196,6 +202,7 @@ public class RecipeListScreen extends ModkitBaseScreen {
             case "blasting"     -> "Blast";
             case "smoking"      -> "Smoke";
             case "stonecutting" -> "Stonecut";
+            case "smithing"     -> "Smith";
             default             -> type;
         };
     }

@@ -1,11 +1,8 @@
 package com.deadlyhunter.modkit.client.screen;
 
-import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.content.block.BlockDefinition;
-import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.deadlyhunter.modkit.network.ModNetworking;
 import com.deadlyhunter.modkit.network.SaveBlockPacket;
-import com.deadlyhunter.modkit.network.SetBlockTexturePacket;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraft.ChatFormatting;
@@ -16,13 +13,6 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class BlockEditorScreen extends ModkitBaseScreen {
 
@@ -49,10 +39,10 @@ public class BlockEditorScreen extends ModkitBaseScreen {
     private CycleButton<String> toolBtn;
     private CycleButton<String> toolTierBtn;
     private CycleButton<String> soundGroupBtn;
+    private CycleButton<String> textureModeBtn;
     private Checkbox requiresCorrectToolBox;
 
     private String errorMessage = null;
-    private boolean hasTexture = false;
 
     public BlockEditorScreen(BlockListScreen parent, String modName, BlockDefinition def, boolean isNew) {
         super(Component.literal(isNew ? "New Block" : "Edit: " + def.id), parent);
@@ -61,7 +51,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.def = def;
         this.isNew = isNew;
         this.panelW = 280;
-        this.panelH = 327;
+        this.panelH = 349;
     }
 
     public BlockListScreen getListParent() { return listParent; }
@@ -69,7 +59,6 @@ public class BlockEditorScreen extends ModkitBaseScreen {
     @Override
     protected void init() {
         super.init();
-        recomputeTextureFlag();
 
         int fieldX = panelX + 110;
         int fieldW = 150;
@@ -83,11 +72,13 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(idField);
         y += ROW_STEP;
 
+
         displayNameField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("display"));
         displayNameField.setMaxLength(64);
         displayNameField.setValue(def.displayName != null ? def.displayName : "");
         this.addRenderableWidget(displayNameField);
         y += ROW_STEP;
+
 
         hardnessField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("hardness"));
         hardnessField.setMaxLength(8);
@@ -95,6 +86,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         hardnessField.setFilter(s -> s.isEmpty() || s.matches("-?\\d{0,4}(\\.\\d{0,2})?"));
         this.addRenderableWidget(hardnessField);
         y += ROW_STEP;
+
 
         resistanceField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("resistance"));
         resistanceField.setMaxLength(8);
@@ -112,6 +104,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(toolBtn);
         y += ROW_STEP;
 
+
         toolTierBtn = CycleButton.<String>builder(s -> Component.literal(cap(s)))
                 .withValues("wood", "stone", "iron", "diamond")
                 .withInitialValue(def.toolTier != null ? def.toolTier : "wood")
@@ -120,13 +113,16 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(toolTierBtn);
         y += ROW_STEP;
 
+
         boolean initialEnabled = !"any".equals(def.tool);
         requiresCorrectToolBox = new Checkbox(fieldX, y, fieldW, ROW_H,
                 Component.literal(def.requiresCorrectTool && initialEnabled ? "Yes" : "No"),
                 def.requiresCorrectTool && initialEnabled);
         this.addRenderableWidget(requiresCorrectToolBox);
+
         updateToolNeededAvailability(toolBtn.getValue());
         y += ROW_STEP;
+
 
         lightField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("light"));
         lightField.setMaxLength(2);
@@ -134,6 +130,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         lightField.setFilter(s -> s.isEmpty() || s.matches("\\d{0,2}"));
         this.addRenderableWidget(lightField);
         y += ROW_STEP;
+
 
         soundGroupBtn = CycleButton.<String>builder(s -> Component.literal(cap(s)))
                 .withValues("stone", "wood", "gravel", "grass", "metal", "glass", "wool", "sand", "snow")
@@ -143,6 +140,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(soundGroupBtn);
         y += ROW_STEP;
 
+
         frictionField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("friction"));
         frictionField.setMaxLength(5);
         frictionField.setValue(String.valueOf(def.friction));
@@ -150,14 +148,29 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(frictionField);
         y += ROW_STEP;
 
+
+        textureModeBtn = CycleButton.<String>builder(s -> Component.literal(textureModeLabel(s)))
+                .withValues("all", "front_other", "front_top_bottom", "all_unique")
+                .withInitialValue(def.textureMode != null ? def.textureMode : "all")
+                .displayOnlyValue()
+                .create(fieldX, y, fieldW, ROW_H, Component.literal(""),
+                        (btn, value) -> def.textureMode = value);
+        this.addRenderableWidget(textureModeBtn);
+        y += ROW_STEP;
+
+
         Button textureBtn = Button.builder(
-                Component.literal(hasTexture ? "Change..." : "Choose..."),
-                btn -> openTexturePicker()
+                Component.literal("Textures..."),
+                btn -> {
+
+                    def.textureMode = textureModeBtn.getValue();
+                    this.minecraft.setScreen(new BlockTextureScreen(this, modName, def));
+                }
         ).bounds(fieldX, y, fieldW, ROW_H).build();
         if (isNew) {
             textureBtn.active = false;
             textureBtn.setTooltip(Tooltip.create(
-                    Component.literal("Save the block first, then set its texture.")));
+                    Component.literal("Save the block first, then set its textures.")));
         }
         this.addRenderableWidget(textureBtn);
         y += ROW_STEP;
@@ -197,6 +210,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
                     Component.literal("Copy"),
                     btn -> duplicateBlock()
             ).bounds(topRightX - 38, topRightY, 38, 14).build());
+
             this.addRenderableWidget(Button.builder(
                     Component.literal("JSON"),
                     btn -> this.minecraft.setScreen(new ViewJsonScreen(this, "JSON: " + def.id, def))
@@ -205,6 +219,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
     }
 
     private void duplicateBlock() {
+
         BlockDefinition copy = new BlockDefinition();
         copy.id = "";
         copy.displayName = def.displayName + " Copy";
@@ -228,6 +243,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         requiresCorrectToolBox.active = enabled;
 
         if (!enabled) {
+
             if (requiresCorrectToolBox.selected()) {
                 requiresCorrectToolBox.onPress();
             }
@@ -236,14 +252,6 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         } else {
             requiresCorrectToolBox.setTooltip(null);
         }
-    }
-
-    private void recomputeTextureFlag() {
-        if (def.id == null || def.id.isBlank()) { hasTexture = false; return; }
-        Path tex = WorkspaceManager.getWorkspacePath(modName)
-                .resolve("assets").resolve("textures").resolve("block")
-                .resolve(def.id + ".png");
-        hasTexture = Files.isRegularFile(tex);
     }
 
     private void trySave() {
@@ -268,6 +276,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         def.resistance = resistance;
         def.tool = toolBtn.getValue();
         def.toolTier = toolTierBtn.getValue();
+
         def.requiresCorrectTool = !"any".equals(def.tool) && requiresCorrectToolBox.selected();
         def.lightEmission = light;
         def.soundGroup = soundGroupBtn.getValue();
@@ -282,54 +291,13 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.minecraft.setScreen(listParent);
     }
 
-    private void openTexturePicker() {
-        Thread picker = new Thread(() -> {
-            String chosenPath;
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                PointerBuffer filters = stack.mallocPointer(1);
-                filters.put(stack.UTF8("*.png"));
-                filters.flip();
-                chosenPath = TinyFileDialogs.tinyfd_openFileDialog(
-                        "Choose a 16x16 PNG for block " + def.id,
-                        null, filters, "PNG image", false);
-            } catch (Throwable t) {
-                Modkit.LOGGER.error("[Modkit] File dialog failed", t);
-                final String msg = "Could not open file dialog: " + t.getMessage();
-                net.minecraft.client.Minecraft.getInstance().execute(() -> errorMessage = msg);
-                return;
-            }
-
-            if (chosenPath == null || chosenPath.isBlank()) return;
-            final String pathString = chosenPath;
-            net.minecraft.client.Minecraft.getInstance().execute(() -> handlePickedFile(pathString));
-        }, "Modkit-BlockFilePicker");
-        picker.setDaemon(true);
-        picker.start();
-    }
-
-    private void handlePickedFile(String chosenPath) {
-        Path source = Path.of(chosenPath);
-        if (!Files.isRegularFile(source)) { errorMessage = "File not found."; return; }
-        if (!chosenPath.toLowerCase().endsWith(".png")) { errorMessage = "Not a .png file."; return; }
-
-        byte[] bytes;
-        try {
-            long size = Files.size(source);
-            if (size > MAX_PNG_FILE_SIZE) {
-                errorMessage = "PNG too large (max 1MB). Got " + (size / 1024) + " KB.";
-                return;
-            }
-            bytes = Files.readAllBytes(source);
-        } catch (IOException e) {
-            errorMessage = "Read error: " + e.getMessage();
-            return;
-        }
-
-        ModNetworking.CHANNEL.sendToServer(new SetBlockTexturePacket(modName, def.id, bytes));
-        hasTexture = true;
-        errorMessage = null;
-        this.clearWidgets();
-        this.init();
+    private static String textureModeLabel(String mode) {
+        return switch (mode) {
+            case "front_other"      -> "Front + Rest";
+            case "front_top_bottom" -> "Front/Top/Bottom";
+            case "all_unique"       -> "All 6 Unique";
+            default                 -> "All Same";
+        };
     }
 
     @Override
@@ -340,18 +308,11 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         String[] labels = {
                 "ID", "Display", "Hardness", "Resistance",
                 "Tool", "Tool Tier", "Tool needed?", "Light",
-                "Sound", "Friction", "Texture", "Drops"
+                "Sound", "Friction", "Tex Mode", "Textures", "Drops"
         };
         for (String l : labels) {
             gfx.drawString(this.font, l, labelX, y, LABEL_COLOR, LABEL_SHADOW);
             y += ROW_STEP;
-        }
-
-        if (!isNew) {
-            int textureRowY = panelY + 26 + 10 * ROW_STEP + 4;
-            String status = hasTexture ? "✓" : "—";
-            int color = hasTexture ? 0x55FF55 : 0xAAAAAA;
-            gfx.drawString(this.font, status, panelX + 98, textureRowY, color, LABEL_SHADOW);
         }
 
         int hintY = panelY + panelH - 44;
@@ -384,6 +345,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
                 String item = def.dropItem != null && !def.dropItem.isBlank() ? def.dropItem : "(none)";
                 yield "Item: " + item + " ▸";
             }
+
             case "item"       -> {
                 String item = def.dropItem != null && !def.dropItem.isBlank() ? def.dropItem : "(none)";
                 yield "Item: " + item + " ▸";

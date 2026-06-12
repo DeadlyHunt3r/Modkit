@@ -2,6 +2,7 @@ package com.deadlyhunter.modkit.content.item;
 
 import com.google.gson.annotations.SerializedName;
 
+
 public class ItemDefinition {
 
     @SerializedName("modkit_format_version")
@@ -16,20 +17,24 @@ public class ItemDefinition {
     @SerializedName("max_stack_size")
     public int maxStackSize = 64;
 
+
     @SerializedName("tooltip_lines")
     public java.util.List<String> tooltipLines = java.util.Collections.emptyList();
-
     @SerializedName("rarity")
     public String rarity = "common";
+
 
     @SerializedName("glow")
     public boolean glow = false;
 
+
     @SerializedName("fuel_burn_time")
     public int fuelBurnTime = 0;
 
+
     @SerializedName("food")
     public FoodData food;
+
 
     public String validate() {
         if (id == null || id.isBlank()) return "Missing 'id'";
@@ -67,9 +72,42 @@ public class ItemDefinition {
         @SerializedName("fast_eat")
         public boolean fastEat = false;
 
+        @SerializedName("effects")
+        public java.util.List<FoodEffect> effects = new java.util.ArrayList<>();
+
         public String validate() {
             if (nutrition < 0 || nutrition > 20) return "nutrition must be 0-20";
             if (saturation < 0 || saturation > 20) return "saturation must be 0-20";
+            if (effects != null) {
+                if (effects.size() > 6) return "max 6 food effects";
+                for (FoodEffect e : effects) {
+                    String err = e.validate();
+                    if (err != null) return err;
+                }
+            }
+            return null;
+        }
+    }
+
+    public static class FoodEffect {
+        @SerializedName("effect")
+        public String effect = "minecraft:regeneration";
+
+        @SerializedName("duration")
+        public int duration = 100;
+
+        @SerializedName("amplifier")
+        public int amplifier = 0;
+
+        @SerializedName("chance")
+        public float chance = 1.0f;
+
+        public String validate() {
+            if (effect == null || effect.isBlank()) return "effect id missing";
+            if (!effect.matches("[a-z0-9_]+:[a-z0-9_/]+")) return "invalid effect id: " + effect;
+            if (duration < 1 || duration > 1000000) return "duration must be 1-1000000 ticks";
+            if (amplifier < 0 || amplifier > 255) return "amplifier must be 0-255";
+            if (chance < 0f || chance > 1f) return "chance must be 0.0-1.0";
             return null;
         }
     }

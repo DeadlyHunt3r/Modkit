@@ -6,6 +6,7 @@ import com.deadlyhunter.modkit.content.recipe.RecipeDefinition.Ingredient;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+
 public final class RecipeJsonGenerator {
 
     private RecipeJsonGenerator() {}
@@ -22,9 +23,11 @@ public final class RecipeJsonGenerator {
             case "blasting"     -> generateCookingRecipe(modId, def, "minecraft:blasting");
             case "smoking"      -> generateCookingRecipe(modId, def, "minecraft:smoking");
             case "stonecutting" -> generateStonecutting(modId, def);
+            case "smithing"     -> generateSmithing(modId, def);
             default             -> throw new IllegalArgumentException("Unknown recipe type: " + def.type);
         };
     }
+
 
     private static String generateShaped(String modId, RecipeDefinition def) {
         StringBuilder patternJson = new StringBuilder();
@@ -34,6 +37,7 @@ public final class RecipeJsonGenerator {
             if (i < def.pattern.size() - 1) patternJson.append(", ");
         }
         patternJson.append("]");
+
 
         Set<Character> usedKeys = new LinkedHashSet<>();
         for (String row : def.pattern) {
@@ -67,6 +71,7 @@ public final class RecipeJsonGenerator {
                 resultJson(modId, def));
     }
 
+
     private static String generateShapeless(String modId, RecipeDefinition def) {
         StringBuilder ingredientsJson = new StringBuilder();
         ingredientsJson.append("[");
@@ -88,6 +93,7 @@ public final class RecipeJsonGenerator {
                 """.formatted(ingredientsJson.toString(), resultJson(modId, def));
     }
 
+
     private static String generateCookingRecipe(String modId, RecipeDefinition def, String recipeType) {
         String resultId = resolveItemId(modId, def.resultSource, def.resultItem);
         return """
@@ -106,6 +112,23 @@ public final class RecipeJsonGenerator {
                 def.cookingTime);
     }
 
+    private static String generateSmithing(String modId, RecipeDefinition def) {
+        String resultId = resolveItemId(modId, def.resultSource, def.resultItem);
+        return """
+                {
+                  "type": "minecraft:smithing_transform",
+                  "template": %s,
+                  "base": %s,
+                  "addition": %s,
+                  "result": { "item": "%s" }
+                }
+                """.formatted(
+                ingredientJson(modId, def.smithingTemplate),
+                ingredientJson(modId, def.smithingBase),
+                ingredientJson(modId, def.smithingAddition),
+                resultId);
+    }
+
     private static String generateStonecutting(String modId, RecipeDefinition def) {
         String resultId = resolveItemId(modId, def.resultSource, def.resultItem);
         return """
@@ -121,10 +144,12 @@ public final class RecipeJsonGenerator {
                 Math.max(1, def.resultCount));
     }
 
+
     private static String ingredientJson(String modId, Ingredient ing) {
         String id = resolveItemId(modId, ing.source, ing.id);
         return "{ \"item\": \"" + id + "\" }";
     }
+
 
     private static String resultJson(String modId, RecipeDefinition def) {
         String id = resolveItemId(modId, def.resultSource, def.resultItem);

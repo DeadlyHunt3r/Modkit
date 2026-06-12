@@ -18,7 +18,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+
 import java.util.*;
+
 
 public final class ProjectRegistry {
 
@@ -49,13 +51,16 @@ public final class ProjectRegistry {
         DeferredRegister<Block> blocks = DeferredRegister.create(ForgeRegistries.BLOCKS, project.modId);
         DeferredRegister<CreativeModeTab> tabs = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, project.modId);
 
+
         for (ItemDefinition def : project.itemDefinitions) {
             RegistryObject<ModkitItem> ro = items.register(def.id, () -> new ModkitItem(def));
             project.registeredItems.add(ro);
         }
 
         for (BlockDefinition def : project.blockDefinitions) {
-            RegistryObject<ModkitBlock> blockRo = blocks.register(def.id, () -> new ModkitBlock(def));
+            RegistryObject<Block> blockRo = blocks.register(def.id, () -> def.usesFacing()
+                    ? new com.deadlyhunter.modkit.content.block.ModkitFacingBlock(def)
+                    : new ModkitBlock(def));
             project.registeredBlocks.add(blockRo);
 
             RegistryObject<BlockItem> blockItemRo = items.register(def.id,
@@ -63,11 +68,13 @@ public final class ProjectRegistry {
             project.registeredBlockItems.add(blockItemRo);
         }
 
+
         for (com.deadlyhunter.modkit.content.weapon.WeaponDefinition def : project.weaponDefinitions) {
             RegistryObject<com.deadlyhunter.modkit.content.weapon.ModkitSword> swordRo = items.register(def.id,
                     () -> new com.deadlyhunter.modkit.content.weapon.ModkitSword(def, project.modId));
             project.registeredSwords.add(swordRo);
         }
+
 
         for (com.deadlyhunter.modkit.content.tool.ToolDefinition def : project.toolDefinitions) {
             RegistryObject<Item> toolRo = items.register(def.id, () -> switch (def.toolType) {
@@ -91,6 +98,8 @@ public final class ProjectRegistry {
                 project.registeredArmor.add(armorRo);
             }
         }
+
+
         if (!project.isEmpty()) {
             tabs.register("main", () ->
                     CreativeModeTab.builder()
@@ -114,7 +123,6 @@ public final class ProjectRegistry {
                                 for (RegistryObject<Item> ro : project.registeredTools) {
                                     out.accept(ro.get());
                                 }
-
                                 for (RegistryObject<com.deadlyhunter.modkit.content.armor.ModkitArmorItem> ro
                                         : project.registeredArmor) {
                                     out.accept(ro.get());
@@ -154,6 +162,7 @@ public final class ProjectRegistry {
     public static List<ModkitProject> getProjects() {
         return Collections.unmodifiableList(PROJECTS);
     }
+
 
     @SubscribeEvent
     public static void onFuelBurnTime(FurnaceFuelBurnTimeEvent event) {

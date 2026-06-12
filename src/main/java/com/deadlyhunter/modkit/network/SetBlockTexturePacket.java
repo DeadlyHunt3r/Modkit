@@ -10,7 +10,9 @@ import net.minecraftforge.network.NetworkEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.function.Supplier;
+
 
 public class SetBlockTexturePacket {
 
@@ -18,25 +20,37 @@ public class SetBlockTexturePacket {
     private static final byte[] PNG_MAGIC = {
             (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
     };
+    private static final Set<String> VALID_FACES = Set.of(
+            "", "front", "top", "bottom", "north", "south", "east", "west", "up", "down");
 
     private final String modName;
     private final String blockId;
+    private final String face;
     private final byte[] pngData;
 
-    public SetBlockTexturePacket(String modName, String blockId, byte[] pngData) {
+    public SetBlockTexturePacket(String modName, String blockId, String face, byte[] pngData) {
         this.modName = modName;
         this.blockId = blockId;
+        this.face = face == null ? "" : face;
         this.pngData = pngData;
+    }
+
+
+    public SetBlockTexturePacket(String modName, String blockId, byte[] pngData) {
+        this(modName, blockId, "", pngData);
     }
 
     public static void encode(SetBlockTexturePacket pkt, FriendlyByteBuf buf) {
         buf.writeUtf(pkt.modName, 64);
         buf.writeUtf(pkt.blockId, 64);
+        buf.writeUtf(pkt.face, 16);
         buf.writeByteArray(pkt.pngData);
     }
 
     public static SetBlockTexturePacket decode(FriendlyByteBuf buf) {
-        return new SetBlockTexturePacket(buf.readUtf(64), buf.readUtf(64), buf.readByteArray(MAX_PNG_BYTES));
+        return new SetBlockTexturePacket(
+                buf.readUtf(64), buf.readUtf(64), buf.readUtf(16),
+                buf.readByteArray(MAX_PNG_BYTES));
     }
 
     public static void handle(SetBlockTexturePacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
@@ -54,7 +68,9 @@ public class SetBlockTexturePacket {
         if (error != null) {
             player.sendSystemMessage(Component.literal("§c[Modkit] Texture upload failed: " + error));
         } else {
-            player.sendSystemMessage(Component.literal("§a[Modkit] Texture set for block '" + pkt.blockId + "'."));
+            String faceInfo = pkt.face.isEmpty() ? "" : " (" + pkt.face + ")";
+            player.sendSystemMessage(Component.literal(
+                    "§a[Modkit] Texture set for block '" + pkt.blockId + "'" + faceInfo + "."));
         }
         ctx.setPacketHandled(true);
     }
@@ -62,15 +78,17 @@ public class SetBlockTexturePacket {
     private static String trySave(SetBlockTexturePacket pkt) {
         if (!WorkspaceManager.exists(pkt.modName)) return "Workspace does not exist.";
         if (!pkt.blockId.matches("[a-z0-9_]{1,40}")) return "Invalid block id.";
+        if (!VALID_FACES.contains(pkt.face)) return "Invalid face suffix.";
 
         if (pkt.pngData == null || pkt.pngData.length < PNG_MAGIC.length) return "Not a valid PNG (too short).";
         for (int i = 0; i < PNG_MAGIC.length; i++) {
             if (pkt.pngData[i] != PNG_MAGIC[i]) return "Not a valid PNG (wrong magic bytes).";
         }
 
+        String fileName = pkt.face.isEmpty() ? pkt.blockId + ".png" : pkt.blockId + "_" + pkt.face + ".png";
         Path target = WorkspaceManager.getWorkspacePath(pkt.modName)
                 .resolve("assets").resolve("textures").resolve("block")
-                .resolve(pkt.blockId + ".png");
+                .resolve(fileName);
 
         try {
             Files.createDirectories(target.getParent());

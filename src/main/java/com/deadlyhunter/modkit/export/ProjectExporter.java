@@ -7,6 +7,7 @@ import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import net.minecraftforge.fml.loading.FMLPaths;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -17,6 +18,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
 
 public final class ProjectExporter {
 
@@ -51,15 +53,19 @@ public final class ProjectExporter {
             try (ZipOutputStream zip = new ZipOutputStream(
                     Files.newOutputStream(tmpJar, StandardOpenOption.CREATE_NEW))) {
 
+
                 writeEntry(zip, "META-INF/MANIFEST.MF", ManifestGenerator.generate(info));
                 writeEntry(zip, "META-INF/mods.toml", ModsTomlGenerator.generate(info));
                 writeEntry(zip, "pack.mcmeta", PackMcmetaGenerator.generate(info));
+
 
                 writeEntry(zip,
                         "assets/" + info.modId + "/lang/en_us.json",
                         LangGenerator.generate(info, items, blocks, weapons, tools, armorSets));
 
+
                 Set<String> writtenAssetPaths = new HashSet<>();
+
 
                 Path workspaceItemTexDir = workspace.resolve("assets").resolve("textures").resolve("item");
                 for (ItemDefinition def : items) {
@@ -79,6 +85,7 @@ public final class ProjectExporter {
                     writtenAssetPaths.add("models/item/" + def.id + ".json");
                 }
 
+
                 for (com.deadlyhunter.modkit.content.weapon.WeaponDefinition def : weapons) {
                     Path userTex = workspaceItemTexDir.resolve(def.id + ".png");
                     String modelPath = "assets/" + info.modId + "/models/item/" + def.id + ".json";
@@ -96,6 +103,7 @@ public final class ProjectExporter {
                     writtenAssetPaths.add("textures/item/" + def.id + ".png");
                     writtenAssetPaths.add("models/item/" + def.id + ".json");
                 }
+
 
                 for (com.deadlyhunter.modkit.content.tool.ToolDefinition def : tools) {
                     Path userTex = workspaceItemTexDir.resolve(def.id + ".png");
@@ -115,8 +123,10 @@ public final class ProjectExporter {
                     writtenAssetPaths.add("models/item/" + def.id + ".json");
                 }
 
+
                 Path workspaceArmorTexDir = workspace.resolve("assets").resolve("textures").resolve("armor");
                 for (com.deadlyhunter.modkit.content.armor.ArmorSetDefinition def : armorSets) {
+
                     for (String pieceType : com.deadlyhunter.modkit.content.armor.ArmorSetDefinition.PIECE_TYPES) {
                         if (!def.hasPiece(pieceType)) continue;
                         String pieceId = def.pieceItemId(pieceType);
@@ -135,6 +145,7 @@ public final class ProjectExporter {
                         writtenAssetPaths.add("textures/item/" + pieceId + ".png");
                         writtenAssetPaths.add("models/item/" + pieceId + ".json");
                     }
+
 
                     for (int layer = 1; layer <= 2; layer++) {
                         String layerFile = def.id + "_layer_" + layer + ".png";
@@ -155,36 +166,48 @@ public final class ProjectExporter {
                     }
                 }
 
+
                 Path workspaceBlockTexDir = workspace.resolve("assets").resolve("textures").resolve("block");
                 for (BlockDefinition def : blocks) {
-                    Path userTex = workspaceBlockTexDir.resolve(def.id + ".png");
-                    boolean hasTexture = Files.isRegularFile(userTex);
 
-                    if (hasTexture) {
-                        String texPath = "assets/" + info.modId + "/textures/block/" + def.id + ".png";
-                        writeBinary(zip, texPath, Files.readAllBytes(userTex));
-                    } else {
-                        warnings.add("Block '" + def.id + "' has no texture (expected: assets/textures/block/"
-                                + def.id + ".png) — using Modkit fallback icon.");
+                    java.util.Set<String> presentSuffixes = new java.util.HashSet<>();
+                    for (String suffix : BlockDefinition.textureSuffixes(def.textureMode)) {
+                        String fileName = suffix.isEmpty() ? def.id + ".png" : def.id + "_" + suffix + ".png";
+                        Path userTex = workspaceBlockTexDir.resolve(fileName);
+                        if (Files.isRegularFile(userTex)) {
+                            presentSuffixes.add(suffix);
+                            writeBinary(zip,
+                                    "assets/" + info.modId + "/textures/block/" + fileName,
+                                    Files.readAllBytes(userTex));
+                            writtenAssetPaths.add("textures/block/" + fileName);
+                        } else {
+                            String label = suffix.isEmpty() ? "base" : suffix;
+                            warnings.add("Block '" + def.id + "' is missing the '" + label
+                                    + "' texture (expected: assets/textures/block/" + fileName
+                                    + ") — using Modkit fallback for that face.");
+                        }
                     }
 
                     String blockstatePath  = "assets/" + info.modId + "/blockstates/"  + def.id + ".json";
                     String blockModelPath  = "assets/" + info.modId + "/models/block/" + def.id + ".json";
                     String itemModelPath   = "assets/" + info.modId + "/models/item/"  + def.id + ".json";
 
-                    writeEntry(zip, blockstatePath, BlockModelGenerator.generateBlockstate(info.modId, def.id));
-                    writeEntry(zip, blockModelPath, BlockModelGenerator.generateBlockModel(info.modId, def.id, hasTexture));
+                    writeEntry(zip, blockstatePath,
+                            BlockModelGenerator.generateBlockstate(info.modId, def.id, def.textureMode));
+                    writeEntry(zip, blockModelPath,
+                            BlockModelGenerator.generateBlockModel(info.modId, def.id, def.textureMode, presentSuffixes));
                     writeEntry(zip, itemModelPath,  BlockModelGenerator.generateItemModel(info.modId, def.id));
 
-                    writtenAssetPaths.add("textures/block/" + def.id + ".png");
                     writtenAssetPaths.add("blockstates/" + def.id + ".json");
                     writtenAssetPaths.add("models/block/" + def.id + ".json");
                     writtenAssetPaths.add("models/item/"  + def.id + ".json");
                 }
 
+
                 copyAssetsExcept(zip, workspace.resolve("assets"), info.modId, writtenAssetPaths);
                 copyDirIntoZip(zip, workspace.resolve("data"), "data/");
                 copyDirIntoZip(zip, workspace.resolve("modkit"), "modkit/");
+
 
                 java.util.Map<String, String> tagFiles =
                         BlockTagsGenerator.generate(info.modId, blocks);
@@ -192,12 +215,14 @@ public final class ProjectExporter {
                     writeEntry(zip, e.getKey(), e.getValue());
                 }
 
+
                 for (BlockDefinition def : blocks) {
                     String lootJson = BlockLootTableGenerator.generate(info.modId, def);
                     if (lootJson == null) continue;
                     String path = BlockLootTableGenerator.getLootTablePath(info.modId, def.id);
                     writeEntry(zip, path, lootJson);
                 }
+
 
                 java.util.Set<String> blockIds = new java.util.HashSet<>();
                 for (BlockDefinition b : blocks) blockIds.add(b.id);
@@ -218,6 +243,7 @@ public final class ProjectExporter {
                             OreWorldgenGenerator.getBiomeModifierPath(info.modId, ore.id),
                             OreWorldgenGenerator.generateBiomeModifier(info.modId, ore));
                 }
+
 
                 for (com.deadlyhunter.modkit.content.recipe.RecipeDefinition recipe : recipes) {
                     try {
@@ -248,6 +274,7 @@ public final class ProjectExporter {
     public static Path getExportsDir() {
         return FMLPaths.GAMEDIR.get().resolve("modkit").resolve("exports");
     }
+
 
     private static List<ItemDefinition> loadItems(Path workspace) {
         return loadDefs(workspace.resolve("modkit").resolve("items"), ItemDefinition.class, ItemDefinition::validate);
@@ -309,6 +336,7 @@ public final class ProjectExporter {
         return result;
     }
 
+
     private static void writeEntry(ZipOutputStream zip, String path, String content) throws IOException {
         ZipEntry entry = new ZipEntry(path);
         zip.putNextEntry(entry);
@@ -322,6 +350,7 @@ public final class ProjectExporter {
         zip.write(data);
         zip.closeEntry();
     }
+
 
     private static void copyAssetsExcept(ZipOutputStream zip, Path assetsDir,
                                           String modId, Set<String> skip) throws IOException {

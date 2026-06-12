@@ -37,6 +37,11 @@ public class ConfirmDeleteRecipeScreen extends ModkitBaseScreen {
         this(parent, parent.getListParent(), modName, recipeId, displayName);
     }
 
+    public ConfirmDeleteRecipeScreen(SmithingRecipeEditorScreen parent, String modName,
+                                      String recipeId, String displayName) {
+        this(parent, parent.getListParent(), modName, recipeId, displayName);
+    }
+
     private ConfirmDeleteRecipeScreen(Screen visualParent, RecipeListScreen listScreen,
                                        String modName, String recipeId, String displayName) {
         super(Component.literal("Delete Recipe"), visualParent);

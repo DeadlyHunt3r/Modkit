@@ -36,6 +36,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
     private static final int ROW_STEP = ROW_H + ROW_GAP;
 
     private static final int LABEL_COLOR = 0xFFFFFF;
+
     private static final boolean LABEL_SHADOW = true;
 
     private final ItemListScreen listParent;
@@ -117,16 +118,23 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(fuelField);
         y += ROW_STEP;
 
+        int halfW = (fieldW - 6) / 2;
         Button textureBtn = Button.builder(
                 Component.literal(hasTexture ? "Change..." : "Choose..."),
                 btn -> openTexturePicker()
-        ).bounds(fieldX, y, fieldW, ROW_H).build();
+        ).bounds(fieldX, y, halfW, ROW_H).build();
         if (isNew) {
             textureBtn.active = false;
             textureBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                     Component.literal("Save the item first, then set its texture.")));
         }
         this.addRenderableWidget(textureBtn);
+
+        Button foodBtn = Button.builder(
+                Component.literal(def.food != null ? "Food ✓" : "Food..."),
+                btn -> this.minecraft.setScreen(new FoodEditorScreen(this, modName, def))
+        ).bounds(fieldX + halfW + 6, y, halfW, ROW_H).build();
+        this.addRenderableWidget(foodBtn);
 
         int tooltipBlockY = panelY + 26 + 7 * ROW_STEP + 14;
         int tooltipX = panelX + 18;
@@ -189,6 +197,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
     }
 
     private void duplicateItem() {
+
         ItemDefinition copy = new ItemDefinition();
         copy.id = "";
         copy.displayName = def.displayName + " Copy";
@@ -245,6 +254,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
     }
 
     private void openTexturePicker() {
+
         Thread picker = new Thread(() -> {
             String chosenPath;
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -300,7 +310,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         int labelX = panelX + 18;
         int y = panelY + 26 + 4;
 
-        String[] labels = {"ID", "Display", "Stack", "Rarity", "Glow", "Fuel", "Texture"};
+        String[] labels = {"ID", "Display", "Stack", "Rarity", "Glow", "Fuel", "Tex / Food"};
         for (String l : labels) {
             gfx.drawString(this.font, l, labelX, y, LABEL_COLOR, LABEL_SHADOW);
             y += ROW_STEP;

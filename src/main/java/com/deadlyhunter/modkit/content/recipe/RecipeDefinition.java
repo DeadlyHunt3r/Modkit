@@ -26,7 +26,6 @@ public class RecipeDefinition {
 
     @SerializedName("result_item")
     public String resultItem = "";
-
     @SerializedName("result_count")
     public int resultCount = 1;
 
@@ -36,8 +35,11 @@ public class RecipeDefinition {
     @SerializedName("ingredients")
     public Map<String, Ingredient> ingredients = new LinkedHashMap<>();
 
+
+
     @SerializedName("ingredient_list")
     public List<Ingredient> ingredientList = new ArrayList<>();
+
 
     @SerializedName("input")
     public Ingredient input;
@@ -47,6 +49,16 @@ public class RecipeDefinition {
 
     @SerializedName("cooking_time")
     public int cookingTime = 200;
+
+    @SerializedName("smithing_template")
+    public Ingredient smithingTemplate;
+
+    @SerializedName("smithing_base")
+    public Ingredient smithingBase;
+
+    @SerializedName("smithing_addition")
+    public Ingredient smithingAddition;
+
 
     public static class Ingredient {
         @SerializedName("source")
@@ -60,6 +72,7 @@ public class RecipeDefinition {
             this.source = source;
             this.id = id;
         }
+
 
         public boolean isEmpty() {
             return id == null || id.isBlank();
@@ -82,6 +95,8 @@ public class RecipeDefinition {
         }
     }
 
+
+
     public String validate() {
         if (id == null || id.isBlank()) return "Missing 'id'";
         if (!id.matches("^[a-z0-9_]{1,40}$")) {
@@ -97,10 +112,12 @@ public class RecipeDefinition {
             case "blasting":
             case "smoking":
             case "stonecutting":
+            case "smithing":
                 break;
             default:
-                return "type must be: shaped, shapeless, smelting, blasting, smoking, or stonecutting";
+                return "type must be: shaped, shapeless, smelting, blasting, smoking, stonecutting, or smithing";
         }
+
 
         if (resultSource == null) resultSource = "mine";
         if (!"mine".equals(resultSource) && !"other".equals(resultSource)) {
@@ -115,6 +132,7 @@ public class RecipeDefinition {
             if (!resultItem.matches("[a-z0-9_]+:[a-z0-9_/]+")) return "invalid result_item id format";
         }
         if (resultCount < 1 || resultCount > 64) return "result_count must be 1-64";
+
 
         switch (type) {
             case "shaped" -> {
@@ -137,6 +155,7 @@ public class RecipeDefinition {
                     }
                 }
                 if (!anyNonSpace) return "pattern must contain at least one ingredient";
+
                 for (Map.Entry<String, Ingredient> e : ingredients.entrySet()) {
                     Ingredient ing = e.getValue();
                     if (ing == null || ing.isEmpty()) {
@@ -171,6 +190,23 @@ public class RecipeDefinition {
                 if (input == null || input.isEmpty()) return "stonecutting recipe needs an input";
                 String err = input.validate();
                 if (err != null) return "input: " + err;
+            }
+            case "smithing" -> {
+                if (smithingTemplate == null || smithingTemplate.isEmpty()) {
+                    return "smithing recipe needs a template";
+                }
+                String terr = smithingTemplate.validate();
+                if (terr != null) return "template: " + terr;
+                if (smithingBase == null || smithingBase.isEmpty()) {
+                    return "smithing recipe needs a base item";
+                }
+                String berr = smithingBase.validate();
+                if (berr != null) return "base: " + berr;
+                if (smithingAddition == null || smithingAddition.isEmpty()) {
+                    return "smithing recipe needs an addition item";
+                }
+                String aerr = smithingAddition.validate();
+                if (aerr != null) return "addition: " + aerr;
             }
         }
         return null;

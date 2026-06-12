@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
+
 public class DeleteBlockPacket {
 
     private final String modName;
@@ -67,6 +68,14 @@ public class DeleteBlockPacket {
             if (Files.exists(pngFile)) {
                 Files.delete(pngFile);
                 Modkit.LOGGER.info("[Modkit] Deleted block texture: {}", pngFile);
+            }
+
+            Path texDir = workspace.resolve("assets").resolve("textures").resolve("block");
+            for (String suffix : new String[]{"front", "top", "bottom", "north", "south", "east", "west", "up", "down"}) {
+                Path faceTex = texDir.resolve(pkt.blockId + "_" + suffix + ".png");
+                try {
+                    if (Files.exists(faceTex)) Files.delete(faceTex);
+                } catch (IOException ignore) { /* not fatal */ }
             }
             return null;
         } catch (IOException e) {

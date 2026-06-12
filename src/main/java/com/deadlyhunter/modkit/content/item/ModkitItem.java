@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+
 public class ModkitItem extends Item {
 
     private final ItemDefinition definition;
@@ -36,6 +37,20 @@ public class ModkitItem extends Item {
                             .saturationMod(def.food.saturation);
             if (def.food.canAlwaysEat) fb.alwaysEat();
             if (def.food.fastEat) fb.fast();
+            if (def.food.effects != null) {
+                for (ItemDefinition.FoodEffect e : def.food.effects) {
+                    net.minecraft.resources.ResourceLocation loc =
+                            net.minecraft.resources.ResourceLocation.tryParse(e.effect);
+                    if (loc == null) continue;
+                    net.minecraft.world.effect.MobEffect mob =
+                            net.minecraftforge.registries.ForgeRegistries.MOB_EFFECTS.getValue(loc);
+                    if (mob == null) continue;
+                    final net.minecraft.world.effect.MobEffectInstance instance =
+                            new net.minecraft.world.effect.MobEffectInstance(
+                                    mob, e.duration, e.amplifier);
+                    fb.effect(() -> instance, e.chance);
+                }
+            }
             props.food(fb.build());
         }
         return props;
@@ -67,6 +82,7 @@ public class ModkitItem extends Item {
         return definition.glow || super.isFoil(stack);
     }
 
+
     @Override
     public Component getName(ItemStack stack) {
         return Component.literal(definition.displayName);
@@ -76,6 +92,7 @@ public class ModkitItem extends Item {
     public Component getDescription() {
         return Component.literal(definition.displayName);
     }
+
 
     @Override
     public int getBurnTime(ItemStack itemStack, @Nullable net.minecraft.world.item.crafting.RecipeType<?> recipeType) {

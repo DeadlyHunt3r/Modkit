@@ -1,7 +1,6 @@
 package com.deadlyhunter.modkit.content;
 
 import com.deadlyhunter.modkit.content.block.BlockDefinition;
-import com.deadlyhunter.modkit.content.block.ModkitBlock;
 import com.deadlyhunter.modkit.content.item.ItemDefinition;
 import com.deadlyhunter.modkit.content.item.ModkitItem;
 import com.deadlyhunter.modkit.content.ore.OreDefinition;
@@ -11,6 +10,7 @@ import net.minecraftforge.registries.RegistryObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 
 public class ModkitProject {
 
@@ -22,7 +22,7 @@ public class ModkitProject {
     public final List<RegistryObject<ModkitItem>> registeredItems = new ArrayList<>();
 
     public final List<BlockDefinition> blockDefinitions = new ArrayList<>();
-    public final List<RegistryObject<ModkitBlock>> registeredBlocks = new ArrayList<>();
+    public final List<RegistryObject<net.minecraft.world.level.block.Block>> registeredBlocks = new ArrayList<>();
     public final List<RegistryObject<BlockItem>> registeredBlockItems = new ArrayList<>();
 
     public final List<OreDefinition> oreDefinitions = new ArrayList<>();
