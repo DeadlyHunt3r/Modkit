@@ -71,7 +71,6 @@ public final class RecipeJsonGenerator {
                 resultJson(modId, def));
     }
 
-
     private static String generateShapeless(String modId, RecipeDefinition def) {
         StringBuilder ingredientsJson = new StringBuilder();
         ingredientsJson.append("[");
@@ -93,7 +92,6 @@ public final class RecipeJsonGenerator {
                 """.formatted(ingredientsJson.toString(), resultJson(modId, def));
     }
 
-
     private static String generateCookingRecipe(String modId, RecipeDefinition def, String recipeType) {
         String resultId = resolveItemId(modId, def.resultSource, def.resultItem);
         return """
@@ -111,6 +109,7 @@ public final class RecipeJsonGenerator {
                 Float.toString(def.experience),
                 def.cookingTime);
     }
+
 
     private static String generateSmithing(String modId, RecipeDefinition def) {
         String resultId = resolveItemId(modId, def.resultSource, def.resultItem);
@@ -145,7 +144,11 @@ public final class RecipeJsonGenerator {
     }
 
 
+
     private static String ingredientJson(String modId, Ingredient ing) {
+        if (ing != null && ing.isTag()) {
+            return "{ \"tag\": \"" + ing.id + "\" }";
+        }
         String id = resolveItemId(modId, ing.source, ing.id);
         return "{ \"item\": \"" + id + "\" }";
     }

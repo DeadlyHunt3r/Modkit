@@ -10,6 +10,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
+
 public class ProjectScreen extends ModkitBaseScreen {
 
     private final String modName;
@@ -32,36 +33,39 @@ public class ProjectScreen extends ModkitBaseScreen {
         int colH = 20;
         int gap = 4;
 
+
         int leftX = centerX - colW - gap / 2;
         int rightX = centerX + gap / 2;
         int startY = panelY + 50;
         int rowSpacing = colH + gap;
 
+
         addActive("Items", leftX, startY, colW, colH,
                 () -> this.minecraft.setScreen(new ItemListScreen(this, modName)));
         addActive("Blocks", rightX, startY, colW, colH,
                 () -> this.minecraft.setScreen(new BlockListScreen(this, modName)));
-
         addActive("Ores", leftX, startY + rowSpacing, colW, colH,
                 () -> this.minecraft.setScreen(new OreListScreen(this, modName)));
         addActive("Recipes", rightX, startY + rowSpacing, colW, colH,
                 () -> this.minecraft.setScreen(new RecipeListScreen(this, modName)));
-
         addActive("Weapons", leftX, startY + 2 * rowSpacing, colW, colH,
                 () -> this.minecraft.setScreen(new WeaponListScreen(this, modName)));
         addActive("Tools", rightX, startY + 2 * rowSpacing, colW, colH,
                 () -> this.minecraft.setScreen(new ToolListScreen(this, modName)));
-
-        addActive("Armor", leftX, startY + 3 * rowSpacing, colW, colH,
-                () -> this.minecraft.setScreen(new ArmorListScreen(this, modName)));
-        addActive("Settings", rightX, startY + 3 * rowSpacing, colW, colH,
+        addActive("Settings", leftX, startY + 3 * rowSpacing, colW, colH,
                 () -> this.minecraft.setScreen(new ProjectSettingsScreen(this, modName)));
+        addActive("Armor", rightX, startY + 3 * rowSpacing, colW, colH,
+                () -> this.minecraft.setScreen(new ArmorListScreen(this, modName)));
+        addActive("Overrides", centerX - colW / 2, startY + 4 * rowSpacing, colW, colH,
+                () -> this.minecraft.setScreen(new OverrideListScreen(this, modName)));
+
 
         int footerY = panelY + panelH - 30;
         this.addRenderableWidget(Button.builder(
                 Component.literal("Export to .jar"),
                 btn -> {
                     ModNetworking.CHANNEL.sendToServer(new ExportProjectPacket(modName));
+
                 }
         ).bounds(centerX - 102, footerY, 100, 20).build());
 

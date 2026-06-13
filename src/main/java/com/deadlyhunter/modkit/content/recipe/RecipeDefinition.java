@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class RecipeDefinition {
 
     @SerializedName("modkit_format_version")
@@ -21,20 +22,24 @@ public class RecipeDefinition {
     @SerializedName("display_name")
     public String displayName;
 
+
     @SerializedName("result_source")
     public String resultSource = "mine";
 
     @SerializedName("result_item")
     public String resultItem = "";
+
+
     @SerializedName("result_count")
     public int resultCount = 1;
+
 
     @SerializedName("pattern")
     public List<String> pattern = new ArrayList<>(List.of("   ", "   ", "   "));
 
+
     @SerializedName("ingredients")
     public Map<String, Ingredient> ingredients = new LinkedHashMap<>();
-
 
 
     @SerializedName("ingredient_list")
@@ -73,20 +78,26 @@ public class RecipeDefinition {
             this.id = id;
         }
 
-
         public boolean isEmpty() {
             return id == null || id.isBlank();
         }
 
+        public boolean isTag() {
+            return "tag".equals(source);
+        }
+
         public String validate() {
             if (source == null) source = "other";
-            if (!"mine".equals(source) && !"other".equals(source)) {
-                return "ingredient source must be 'mine' or 'other'";
+            if (!"mine".equals(source) && !"other".equals(source) && !"tag".equals(source)) {
+                return "ingredient source must be 'mine', 'other' or 'tag'";
             }
             if (id == null || id.isBlank()) return null;
             if ("mine".equals(source)) {
                 if (id.contains(":")) return "'mine' ingredient must not include namespace";
                 if (!id.matches("[a-z0-9_]{1,40}")) return "invalid mine ingredient id";
+            } else if ("tag".equals(source)) {
+                if (!id.contains(":")) return "tag must include namespace (e.g. forge:ingots/iron)";
+                if (!id.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")) return "invalid tag id format";
             } else {
                 if (!id.contains(":")) return "'other' ingredient must include namespace (e.g. minecraft:diamond)";
                 if (!id.matches("[a-z0-9_]+:[a-z0-9_/]+")) return "invalid other ingredient id format";
@@ -94,8 +105,6 @@ public class RecipeDefinition {
             return null;
         }
     }
-
-
 
     public String validate() {
         if (id == null || id.isBlank()) return "Missing 'id'";
@@ -118,7 +127,6 @@ public class RecipeDefinition {
                 return "type must be: shaped, shapeless, smelting, blasting, smoking, stonecutting, or smithing";
         }
 
-
         if (resultSource == null) resultSource = "mine";
         if (!"mine".equals(resultSource) && !"other".equals(resultSource)) {
             return "result_source must be 'mine' or 'other'";
@@ -132,7 +140,6 @@ public class RecipeDefinition {
             if (!resultItem.matches("[a-z0-9_]+:[a-z0-9_/]+")) return "invalid result_item id format";
         }
         if (resultCount < 1 || resultCount > 64) return "result_count must be 1-64";
-
 
         switch (type) {
             case "shaped" -> {

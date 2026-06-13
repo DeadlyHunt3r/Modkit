@@ -10,13 +10,6 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Forge Block subclass that reads its properties from a BlockDefinition.
- *
- * XP drops are not part of loot tables — they live on the Block class via
- * getExpDrop(). We override it here to return a uniform random value between
- * the definition's xp_min and xp_max.
- */
 public class ModkitBlock extends Block {
 
     private final BlockDefinition definition;
@@ -35,15 +28,10 @@ public class ModkitBlock extends Block {
         return Component.literal(definition.displayName);
     }
 
-    /**
-     * Called by vanilla on block break to determine XP drop.
-     * Note: Forge's signature here is the legacy non-deprecated overload
-     * for 1.20.1 — we receive a RandomSource and the position.
-     */
     @Override
     public int getExpDrop(BlockState state, LevelReader level, RandomSource random,
                           BlockPos pos, int fortuneLevel, int silkTouchLevel) {
-        // No XP if Silk Touch was used — matches vanilla ore behavior
+
         if (silkTouchLevel > 0) return 0;
         if (definition.xpMax <= 0) return 0;
 
@@ -53,7 +41,7 @@ public class ModkitBlock extends Block {
         return min + random.nextInt(max - min + 1);
     }
 
-    /** Shared properties builder — also used by ModkitFacingBlock. */
+
     static BlockBehaviour.Properties buildPropertiesFor(BlockDefinition def) {
         return buildProperties(def);
     }

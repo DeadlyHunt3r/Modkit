@@ -14,6 +14,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
+
 public class BlockEditorScreen extends ModkitBaseScreen {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -72,13 +73,11 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(idField);
         y += ROW_STEP;
 
-
         displayNameField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("display"));
         displayNameField.setMaxLength(64);
         displayNameField.setValue(def.displayName != null ? def.displayName : "");
         this.addRenderableWidget(displayNameField);
         y += ROW_STEP;
-
 
         hardnessField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("hardness"));
         hardnessField.setMaxLength(8);
@@ -86,7 +85,6 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         hardnessField.setFilter(s -> s.isEmpty() || s.matches("-?\\d{0,4}(\\.\\d{0,2})?"));
         this.addRenderableWidget(hardnessField);
         y += ROW_STEP;
-
 
         resistanceField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("resistance"));
         resistanceField.setMaxLength(8);
@@ -104,7 +102,6 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(toolBtn);
         y += ROW_STEP;
 
-
         toolTierBtn = CycleButton.<String>builder(s -> Component.literal(cap(s)))
                 .withValues("wood", "stone", "iron", "diamond")
                 .withInitialValue(def.toolTier != null ? def.toolTier : "wood")
@@ -112,7 +109,6 @@ public class BlockEditorScreen extends ModkitBaseScreen {
                 .create(fieldX, y, fieldW, ROW_H, Component.literal(""));
         this.addRenderableWidget(toolTierBtn);
         y += ROW_STEP;
-
 
         boolean initialEnabled = !"any".equals(def.tool);
         requiresCorrectToolBox = new Checkbox(fieldX, y, fieldW, ROW_H,
@@ -175,11 +171,24 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(textureBtn);
         y += ROW_STEP;
 
+        int halfBW = (fieldW - 6) / 2;
         Button dropsBtn = Button.builder(
                 Component.literal(dropsButtonLabel()),
                 btn -> this.minecraft.setScreen(new BlockDropsScreen(this, modName, def))
-        ).bounds(fieldX, y, fieldW, ROW_H).build();
+        ).bounds(fieldX, y, halfBW, ROW_H).build();
         this.addRenderableWidget(dropsBtn);
+
+        Button tagsBtn = Button.builder(
+                Component.literal(def.tags != null && !def.tags.isEmpty()
+                        ? "Tags (" + def.tags.size() + ")" : "Tags"),
+                btn -> {
+                    if (def.tags == null) def.tags = new java.util.ArrayList<>();
+                    this.minecraft.setScreen(new TagEditorScreen(this, def.tags, true,
+                            def.id == null || def.id.isBlank() ? "block" : def.id));
+                }
+        ).bounds(fieldX + halfBW + 6, y, halfBW, ROW_H).build();
+        this.addRenderableWidget(tagsBtn);
+
 
         int footerY = panelY + panelH - 32;
         int btnW = 70;
@@ -202,6 +211,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
                     btn -> this.minecraft.setScreen(
                             new ConfirmDeleteBlockScreen(this, modName, def.id, def.displayName))
             ).bounds(panelX + 12, footerY, 60, 20).build());
+
 
             int topRightX = panelX + panelW - 12;
             int topRightY = panelY + 6;
@@ -235,6 +245,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
 
         this.minecraft.setScreen(new BlockEditorScreen(listParent, modName, copy, true));
     }
+
 
     private void updateToolNeededAvailability(String toolValue) {
         if (requiresCorrectToolBox == null) return;
@@ -300,6 +311,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         };
     }
 
+
     @Override
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         int labelX = panelX + 18;
@@ -308,7 +320,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
         String[] labels = {
                 "ID", "Display", "Hardness", "Resistance",
                 "Tool", "Tool Tier", "Tool needed?", "Light",
-                "Sound", "Friction", "Tex Mode", "Textures", "Drops"
+                "Sound", "Friction", "Tex Mode", "Textures", "Drops/Tag"
         };
         for (String l : labels) {
             gfx.drawString(this.font, l, labelX, y, LABEL_COLOR, LABEL_SHADOW);
@@ -331,6 +343,7 @@ public class BlockEditorScreen extends ModkitBaseScreen {
     private static String cap(String s) {
         return s == null || s.isEmpty() ? "" : Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
+
 
     private String dropsButtonLabel() {
         String mode = def.dropMode != null ? def.dropMode : "self";

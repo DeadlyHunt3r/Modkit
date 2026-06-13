@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -28,6 +29,10 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
     private final RecipeDefinition def;
     private final boolean isNew;
 
+    private final java.util.function.Consumer<RecipeDefinition> overrideCallback;
+    private final net.minecraft.client.gui.screens.Screen returnTo;
+
+
     private final Ingredient[] slots = new Ingredient[9];
 
     private EditBox idField;
@@ -36,6 +41,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
     private EditBox resultItemField;
     private EditBox resultCountField;
     private String errorMessage = null;
+
 
     private static final int SLOT_SIZE = 26;
     private static final int SLOT_GAP = 2;
@@ -47,6 +53,24 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         this.modName = modName;
         this.def = def;
         this.isNew = isNew;
+        this.overrideCallback = null;
+        this.returnTo = null;
+        this.panelW = 320;
+        this.panelH = 280;
+        this.def.type = "shaped";
+        decodePatternIntoSlots();
+    }
+
+    public ShapedRecipeEditorScreen(net.minecraft.client.gui.screens.Screen returnTo, String modName,
+                                     RecipeDefinition def,
+                                     java.util.function.Consumer<RecipeDefinition> overrideCallback) {
+        super(Component.literal("Replacement: Shaped"), returnTo);
+        this.listParent = null;
+        this.modName = modName;
+        this.def = def;
+        this.isNew = false;
+        this.overrideCallback = overrideCallback;
+        this.returnTo = returnTo;
         this.panelW = 320;
         this.panelH = 280;
         this.def.type = "shaped";
@@ -61,9 +85,11 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         rebuildWidgetsForEditor();
     }
 
+
     private void decodePatternIntoSlots() {
         for (int i = 0; i < 9; i++) slots[i] = null;
         if (def.pattern == null || def.ingredients == null) return;
+
 
         for (int r = 0; r < def.pattern.size() && r < 3; r++) {
             String row = def.pattern.get(r);
@@ -86,7 +112,10 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         int rightPanelX = panelX + panelW / 2 + 8;
         int fieldW = 130;
 
+
         int topY = panelY + 26;
+
+        boolean overrideMode = overrideCallback != null;
 
         idField = new EditBox(this.font, leftPanelX + 50, topY, panelW - 80, 16,
                 Component.literal("id"));
@@ -94,13 +123,14 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         idField.setValue(def.id != null ? def.id : "");
         if (!isNew) idField.setEditable(false);
         idField.setFilter(s -> s.isEmpty() || s.matches("[a-z0-9_]*"));
-        this.addRenderableWidget(idField);
+        if (!overrideMode) this.addRenderableWidget(idField);
 
         displayNameField = new EditBox(this.font, leftPanelX + 50, topY + 22, panelW - 80, 16,
                 Component.literal("display"));
         displayNameField.setMaxLength(64);
         displayNameField.setValue(def.displayName != null ? def.displayName : "");
-        this.addRenderableWidget(displayNameField);
+        if (!overrideMode) this.addRenderableWidget(displayNameField);
+
 
         int gridLeft = leftPanelX + 6;
         int gridTop = panelY + 78;
@@ -119,6 +149,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
                     btn -> openSlotPicker(slotIndex)
             ).bounds(sx, sy, SLOT_SIZE, SLOT_SIZE).build());
         }
+
 
         int resultY = panelY + 78;
 
@@ -144,6 +175,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         resultCountField.setFilter(s -> s.isEmpty() || s.matches("\\d{0,2}"));
         this.addRenderableWidget(resultCountField);
 
+
         int footerY = panelY + panelH - 30;
         int btnW = 70;
         int gap = 6;
@@ -159,7 +191,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
                 btn -> this.onClose()
         ).bounds(centerX + gap / 2, footerY, btnW, 20).build());
 
-        if (!isNew) {
+        if (!isNew && overrideCallback == null) {
             this.addRenderableWidget(Button.builder(
                     Component.literal("Delete").withStyle(ChatFormatting.RED),
                     btn -> this.minecraft.setScreen(
@@ -177,10 +209,13 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
                     } else {
                         slots[slotIndex] = result;
                     }
+
                 }));
     }
 
+
     private String letterForIngredient(Ingredient ing) {
+
         Map<String, Character> assigned = new LinkedHashMap<>();
         char nextLetter = 'X';
         for (Ingredient s : slots) {
@@ -194,6 +229,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         Character c = assigned.get(ing.source + "|" + ing.id);
         return c != null ? String.valueOf(c) : "?";
     }
+
 
     private static char nextLetter(char c) {
         if (c == 'X') return 'Y';
@@ -220,6 +256,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         def.resultItem = resultItemField.getValue().trim();
         def.resultCount = count;
 
+
         int minR = 3, maxR = -1, minC = 3, maxC = -1;
         for (int i = 0; i < 9; i++) {
             if (slots[i] == null) continue;
@@ -234,6 +271,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
             return;
         }
 
+
         Map<String, Character> letterMap = new LinkedHashMap<>();
         char nextL = 'X';
         for (int i = 0; i < 9; i++) {
@@ -244,6 +282,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
                 nextL = nextLetter(nextL);
             }
         }
+
 
         List<String> pattern = new ArrayList<>();
         for (int r = minR; r <= maxR; r++) {
@@ -260,6 +299,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         }
         def.pattern = pattern;
 
+
         Map<String, Ingredient> ingredientMap = new LinkedHashMap<>();
         for (Map.Entry<String, Character> e : letterMap.entrySet()) {
             String[] parts = e.getKey().split("\\|", 2);
@@ -268,8 +308,15 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
         }
         def.ingredients = ingredientMap;
 
+
         String err = def.validate();
         if (err != null) { errorMessage = err; return; }
+
+        if (overrideCallback != null) {
+            overrideCallback.accept(def);
+            this.minecraft.setScreen(returnTo);
+            return;
+        }
 
         String json = GSON.toJson(def);
         ModNetworking.CHANNEL.sendToServer(new SaveRecipePacket(modName, def.id, json));
@@ -281,17 +328,26 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         int labelX = panelX + 16;
 
-        gfx.drawString(this.font, "ID",      labelX, panelY + 30, LABEL_COLOR, true);
-        gfx.drawString(this.font, "Display", labelX, panelY + 52, LABEL_COLOR, true);
+        if (overrideCallback == null) {
+            gfx.drawString(this.font, "ID",      labelX, panelY + 30, LABEL_COLOR, true);
+            gfx.drawString(this.font, "Display", labelX, panelY + 52, LABEL_COLOR, true);
+        } else {
+            gfx.drawString(this.font,
+                    Component.literal("Replacement recipe").withStyle(ChatFormatting.GRAY),
+                    labelX, panelY + 38, 0xFFFFFF);
+        }
+
 
         gfx.drawString(this.font, "Pattern (click slots):",
                 labelX, panelY + 68, LABEL_COLOR, true);
+
 
         int rightLabelX = panelX + panelW / 2 + 8;
         gfx.drawString(this.font, "Result:",  rightLabelX, panelY + 78,  LABEL_COLOR, true);
         gfx.drawString(this.font, "Source:",  rightLabelX, panelY + 96,  LABEL_COLOR, true);
         gfx.drawString(this.font, "Item ID:", rightLabelX, panelY + 116, LABEL_COLOR, true);
         gfx.drawString(this.font, "Count:",   rightLabelX, panelY + 158, LABEL_COLOR, true);
+
 
         Map<String, Character> letterMap = new LinkedHashMap<>();
         char nextL = 'X';
@@ -313,6 +369,7 @@ public class ShapedRecipeEditorScreen extends ModkitBaseScreen {
             ly += 10;
             if (ly > panelY + panelH - 60) break;
         }
+
 
         int hintY = panelY + panelH - 46;
         if (errorMessage != null) {

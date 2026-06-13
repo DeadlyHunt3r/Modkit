@@ -2,14 +2,6 @@ package com.deadlyhunter.modkit.content.block;
 
 import com.google.gson.annotations.SerializedName;
 
-/**
- * Data model for a custom block.
- *
- * Phase 4b extension: drop_mode controls what the block drops on break.
- *   "self"    — drops itself (default)
- *   "item"    — drops a referenced item (with min/max + fortune + xp)
- *   "nothing" — drops nothing
- */
 public class BlockDefinition {
 
     @SerializedName("modkit_format_version")
@@ -45,24 +37,11 @@ public class BlockDefinition {
     @SerializedName("friction")
     public float friction = 0.6f;
 
-    // --- Phase 7a: per-side textures ---
-    /**
-     * "all"              — one texture on all 6 sides (default, legacy behavior)
-     * "front_other"      — front texture + one texture for the other 5 sides.
-     *                      Block rotates toward the player on placement (furnace-style).
-     * "front_top_bottom" — front + top + bottom + one texture for the sides.
-     *                      Also rotates toward the player.
-     * "all_unique"       — all 6 sides individual (north/south/east/west/up/down,
-     *                      fixed to world directions, no rotation).
-     *
-     * Texture file naming in workspace assets/textures/block/:
-     *   suffix ""      → <id>.png        (the "all" / "sides" / "rest" texture)
-     *   suffix "front" → <id>_front.png  (etc.)
-     */
+
     @SerializedName("texture_mode")
     public String textureMode = "all";
 
-    /** Returns the texture suffixes this mode needs. "" = base file <id>.png. */
+
     public static String[] textureSuffixes(String mode) {
         return switch (mode == null ? "all" : mode) {
             case "front_other"      -> new String[]{"", "front"};
@@ -72,45 +51,45 @@ public class BlockDefinition {
         };
     }
 
-    /** True if this block needs a FACING blockstate (rotates on placement). */
+
     public boolean usesFacing() {
         return "front_other".equals(textureMode) || "front_top_bottom".equals(textureMode);
     }
 
-    // --- Legacy field (Phase 3). Kept for backwards-compat with old workspaces.
-    // If true and dropMode is unset, behaves like dropMode="self".
-    // If false and dropMode is unset, behaves like dropMode="nothing".
+
     @SerializedName("drop_self")
     public boolean dropSelf = true;
 
-    // --- Phase 4b: explicit drop mode + item drop config ---
-    /** "self" (default), "item", or "nothing". */
+
     @SerializedName("drop_mode")
     public String dropMode = "self";
 
-    /** Item ID to drop when drop_mode = "item". Format: "<modid>:<itemid>" or just "<itemid>" for vanilla. */
+
     @SerializedName("drop_item")
     public String dropItem = "";
 
-    /** Minimum count of drop_item per break (when drop_mode = "item"). */
+
     @SerializedName("drop_min")
     public int dropMin = 1;
 
-    /** Maximum count of drop_item per break (when drop_mode = "item"). */
+
     @SerializedName("drop_max")
     public int dropMax = 1;
 
-    /** Whether the Fortune enchantment boosts the drop count. */
+
     @SerializedName("drop_fortune")
     public boolean dropFortune = false;
 
-    /** Minimum experience dropped (vanilla diamond ore = 3-7). */
+
     @SerializedName("xp_min")
     public int xpMin = 0;
 
-    /** Maximum experience dropped. */
+
     @SerializedName("xp_max")
     public int xpMax = 0;
+
+    @SerializedName("tags")
+    public java.util.List<String> tags = new java.util.ArrayList<>();
 
     public String validate() {
         if (id == null || id.isBlank()) return "Missing 'id'";
@@ -149,12 +128,11 @@ public class BlockDefinition {
             default: return "Unknown sound_group: " + soundGroup;
         }
 
-        // --- Drop validation ---
-        // Migration: if dropMode is missing/empty (very old workspace), derive from dropSelf
+
         if (dropMode == null || dropMode.isBlank()) {
             dropMode = dropSelf ? "self" : "nothing";
         }
-        // Legacy migration: "item" → distinguish by whether drop_item has a namespace
+
         if ("item".equals(dropMode)) {
             if (dropItem != null && dropItem.contains(":")) {
                 dropMode = "item_other";
@@ -202,8 +180,12 @@ public class BlockDefinition {
         if (xpMax < xpMin) return "xp_max cannot be less than xp_min";
         if (xpMax > 100) return "xp_max cannot exceed 100";
 
-        // Keep dropSelf in sync with dropMode so old code paths still work
+
         dropSelf = "self".equals(dropMode);
+
+        if (tags == null) tags = new java.util.ArrayList<>();
+        String tagErr = com.deadlyhunter.modkit.content.tag.TagUtil.validateTagList(tags);
+        if (tagErr != null) return tagErr;
 
         return null;
     }

@@ -13,17 +13,18 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
+
 public class StonecuttingRecipeEditorScreen extends ModkitBaseScreen {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int LABEL_COLOR = 0xFFFFFF;
     private static final int SLOT_SIZE = 32;
-
     private final RecipeListScreen listParent;
     private final String modName;
     private final RecipeDefinition def;
     private final boolean isNew;
-
+    private final java.util.function.Consumer<RecipeDefinition> overrideCallback;
+    private final net.minecraft.client.gui.screens.Screen returnTo;
     private EditBox idField;
     private EditBox displayNameField;
     private CycleButton<String> resultSourceBtn;
@@ -38,6 +39,24 @@ public class StonecuttingRecipeEditorScreen extends ModkitBaseScreen {
         this.modName = modName;
         this.def = def;
         this.isNew = isNew;
+        this.overrideCallback = null;
+        this.returnTo = null;
+        this.panelW = 320;
+        this.panelH = 235;
+        this.def.type = "stonecutting";
+        if (this.def.input == null) this.def.input = new Ingredient("mine", "");
+    }
+
+    public StonecuttingRecipeEditorScreen(net.minecraft.client.gui.screens.Screen returnTo, String modName,
+                                           RecipeDefinition def,
+                                           java.util.function.Consumer<RecipeDefinition> overrideCallback) {
+        super(Component.literal("Replacement: Stonecutting"), returnTo);
+        this.listParent = null;
+        this.modName = modName;
+        this.def = def;
+        this.isNew = false;
+        this.overrideCallback = overrideCallback;
+        this.returnTo = returnTo;
         this.panelW = 320;
         this.panelH = 235;
         this.def.type = "stonecutting";
@@ -59,19 +78,21 @@ public class StonecuttingRecipeEditorScreen extends ModkitBaseScreen {
         int rightPanelX = panelX + panelW / 2 + 8;
         int fieldW = 130;
 
+        boolean overrideMode = overrideCallback != null;
+
         idField = new EditBox(this.font, leftPanelX + 50, panelY + 26, panelW - 80, 16,
                 Component.literal("id"));
         idField.setMaxLength(40);
         idField.setValue(def.id != null ? def.id : "");
         if (!isNew) idField.setEditable(false);
         idField.setFilter(s -> s.isEmpty() || s.matches("[a-z0-9_]*"));
-        this.addRenderableWidget(idField);
+        if (!overrideMode) this.addRenderableWidget(idField);
 
         displayNameField = new EditBox(this.font, leftPanelX + 50, panelY + 48, panelW - 80, 16,
                 Component.literal("display"));
         displayNameField.setMaxLength(64);
         displayNameField.setValue(def.displayName != null ? def.displayName : "");
-        this.addRenderableWidget(displayNameField);
+        if (!overrideMode) this.addRenderableWidget(displayNameField);
 
         Ingredient input = def.input;
         String inputLabel = (input == null || input.isEmpty()) ? "+" : "✓";
@@ -117,7 +138,7 @@ public class StonecuttingRecipeEditorScreen extends ModkitBaseScreen {
                 btn -> this.onClose()
         ).bounds(centerX + gap / 2, footerY, btnW, 20).build());
 
-        if (!isNew) {
+        if (!isNew && overrideCallback == null) {
             this.addRenderableWidget(Button.builder(
                     Component.literal("Delete").withStyle(ChatFormatting.RED),
                     btn -> this.minecraft.setScreen(
@@ -165,6 +186,12 @@ public class StonecuttingRecipeEditorScreen extends ModkitBaseScreen {
         if (err != null) { errorMessage = err; return; }
 
         String json = GSON.toJson(def);
+        if (overrideCallback != null) {
+            overrideCallback.accept(def);
+            this.minecraft.setScreen(returnTo);
+            return;
+        }
+
         ModNetworking.CHANNEL.sendToServer(new SaveRecipePacket(modName, def.id, json));
         listParent.onRecipeChanged();
         this.minecraft.setScreen(listParent);
@@ -174,8 +201,14 @@ public class StonecuttingRecipeEditorScreen extends ModkitBaseScreen {
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         int labelX = panelX + 16;
 
-        gfx.drawString(this.font, "ID",      labelX, panelY + 30, LABEL_COLOR, true);
-        gfx.drawString(this.font, "Display", labelX, panelY + 52, LABEL_COLOR, true);
+        if (overrideCallback == null) {
+            gfx.drawString(this.font, "ID",      labelX, panelY + 30, LABEL_COLOR, true);
+            gfx.drawString(this.font, "Display", labelX, panelY + 52, LABEL_COLOR, true);
+        } else {
+            gfx.drawString(this.font,
+                    Component.literal("Replacement recipe").withStyle(ChatFormatting.GRAY),
+                    labelX, panelY + 38, 0xFFFFFF);
+        }
 
         gfx.drawString(this.font, "Input:",  labelX, panelY + 82, LABEL_COLOR, true);
         gfx.drawString(this.font, "→",       labelX + 56, panelY + 110, LABEL_COLOR, true);

@@ -10,14 +10,7 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 
-/**
- * Variant of ModkitBlock with a horizontal FACING property — used for the
- * texture modes "front_other" and "front_top_bottom" where the front face
- * should point at the player on placement (furnace-style).
- *
- * Behavior (XP drops, name, properties) mirrors ModkitBlock; the properties
- * builder is reused from there to avoid duplication.
- */
+
 public class ModkitFacingBlock extends HorizontalDirectionalBlock {
 
     private final BlockDefinition definition;
@@ -40,7 +33,7 @@ public class ModkitFacingBlock extends HorizontalDirectionalBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // Front faces the player — same as vanilla furnace
+
         return this.defaultBlockState()
                 .setValue(FACING, context.getHorizontalDirection().getOpposite());
     }

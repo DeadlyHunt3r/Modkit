@@ -8,11 +8,14 @@ public class ItemDefinition {
     @SerializedName("modkit_format_version")
     public int formatVersion = 1;
 
+
     @SerializedName("id")
     public String id;
 
+
     @SerializedName("display_name")
     public String displayName;
+
 
     @SerializedName("max_stack_size")
     public int maxStackSize = 64;
@@ -20,6 +23,8 @@ public class ItemDefinition {
 
     @SerializedName("tooltip_lines")
     public java.util.List<String> tooltipLines = java.util.Collections.emptyList();
+
+
     @SerializedName("rarity")
     public String rarity = "common";
 
@@ -34,6 +39,9 @@ public class ItemDefinition {
 
     @SerializedName("food")
     public FoodData food;
+
+    @SerializedName("tags")
+    public java.util.List<String> tags = new java.util.ArrayList<>();
 
 
     public String validate() {
@@ -56,6 +64,9 @@ public class ItemDefinition {
             String foodError = food.validate();
             if (foodError != null) return "food: " + foodError;
         }
+        if (tags == null) tags = new java.util.ArrayList<>();
+        String tagErr = com.deadlyhunter.modkit.content.tag.TagUtil.validateTagList(tags);
+        if (tagErr != null) return tagErr;
         return null;
     }
 

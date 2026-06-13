@@ -8,10 +8,12 @@ import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModInfo;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Stream;
+
 
 public final class ProjectScanner {
 
@@ -35,6 +37,7 @@ public final class ProjectScanner {
             if (project != null) projects.put(project.modId, project);
         }
 
+
         for (String wsName : WorkspaceManager.listWorkspaces()) {
             ModkitProject project = loadFromWorkspace(wsName);
             if (project != null) {
@@ -48,6 +51,7 @@ public final class ProjectScanner {
         Modkit.LOGGER.info("[Modkit] Discovered {} project(s).", projects.size());
         return new ArrayList<>(projects.values());
     }
+
 
     private static ModkitProject loadFromJar(IModInfo modInfo) {
         String modId = modInfo.getModId();
@@ -65,6 +69,7 @@ public final class ProjectScanner {
             loadBlocks(project, modRoot.resolve("modkit").resolve("blocks"), "jar:" + modId);
             loadOres(project, modRoot.resolve("modkit").resolve("ores"),   "jar:" + modId);
             loadRecipes(project, modRoot.resolve("modkit").resolve("recipes"), "jar:" + modId);
+            loadOverrides(project, modRoot.resolve("modkit").resolve("overrides"), "jar:" + modId);
             loadWeapons(project, modRoot.resolve("modkit").resolve("weapons"), "jar:" + modId);
             loadTools(project, modRoot.resolve("modkit").resolve("tools"), "jar:" + modId);
             loadArmor(project, modRoot.resolve("modkit").resolve("armor"), "jar:" + modId);
@@ -85,6 +90,7 @@ public final class ProjectScanner {
         loadBlocks(project, wsPath.resolve("modkit").resolve("blocks"), "ws:" + wsName);
         loadOres(project,   wsPath.resolve("modkit").resolve("ores"),   "ws:" + wsName);
         loadRecipes(project, wsPath.resolve("modkit").resolve("recipes"), "ws:" + wsName);
+        loadOverrides(project, wsPath.resolve("modkit").resolve("overrides"), "ws:" + wsName);
         loadWeapons(project, wsPath.resolve("modkit").resolve("weapons"), "ws:" + wsName);
         loadTools(project, wsPath.resolve("modkit").resolve("tools"), "ws:" + wsName);
         loadArmor(project, wsPath.resolve("modkit").resolve("armor"), "ws:" + wsName);
@@ -121,6 +127,14 @@ public final class ProjectScanner {
                 def -> def.id,
                 com.deadlyhunter.modkit.content.recipe.RecipeDefinition::validate,
                 project.recipeDefinitions::add);
+    }
+
+    private static void loadOverrides(ModkitProject project, Path overridesDir, String sourceTag) {
+        loadDefs(overridesDir, sourceTag, project.modId, "override",
+                com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition.class,
+                def -> def.id,
+                com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition::validate,
+                project.recipeOverrideDefinitions::add);
     }
 
     private static void loadWeapons(ModkitProject project, Path weaponsDir, String sourceTag) {

@@ -13,17 +13,18 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
+
 public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int LABEL_COLOR = 0xFFFFFF;
     private static final int SLOT_SIZE = 32;
-
     private final RecipeListScreen listParent;
     private final String modName;
     private final RecipeDefinition def;
     private final boolean isNew;
-
+    private final java.util.function.Consumer<RecipeDefinition> overrideCallback;
+    private final net.minecraft.client.gui.screens.Screen returnTo;
     private EditBox idField;
     private EditBox displayNameField;
     private CycleButton<String> resultSourceBtn;
@@ -40,6 +41,8 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         this.modName = modName;
         this.def = def;
         this.isNew = isNew;
+        this.overrideCallback = null;
+        this.returnTo = null;
         this.panelW = 320;
         this.panelH = 260;
         if (def.type == null || (!def.type.equals("smelting") && !def.type.equals("blasting") && !def.type.equals("smoking"))) {
@@ -47,6 +50,25 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         }
         if (this.def.input == null) this.def.input = new Ingredient("mine", "");
     }
+
+    public SmeltingRecipeEditorScreen(net.minecraft.client.gui.screens.Screen returnTo, String modName,
+                                       RecipeDefinition def,
+                                       java.util.function.Consumer<RecipeDefinition> overrideCallback) {
+        super(Component.literal("Replacement: Cooking"), returnTo);
+        this.listParent = null;
+        this.modName = modName;
+        this.def = def;
+        this.isNew = false;
+        this.overrideCallback = overrideCallback;
+        this.returnTo = returnTo;
+        this.panelW = 320;
+        this.panelH = 260;
+        if (def.type == null || (!def.type.equals("smelting") && !def.type.equals("blasting") && !def.type.equals("smoking"))) {
+            this.def.type = "smelting";
+        }
+        if (this.def.input == null) this.def.input = new Ingredient("mine", "");
+    }
+
 
     private static String titleFor(RecipeDefinition def, boolean isNew) {
         String typeWord = switch (def.type != null ? def.type : "smelting") {
@@ -56,6 +78,7 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         };
         return isNew ? "New " + typeWord + " Recipe" : "Edit: " + def.id;
     }
+
 
     private int defaultCookingTime() {
         return switch (def.type) {
@@ -79,19 +102,23 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         int rightPanelX = panelX + panelW / 2 + 8;
         int fieldW = 130;
 
+        boolean overrideMode = overrideCallback != null;
+
+
         idField = new EditBox(this.font, leftPanelX + 50, panelY + 26, panelW - 80, 16,
                 Component.literal("id"));
         idField.setMaxLength(40);
         idField.setValue(def.id != null ? def.id : "");
         if (!isNew) idField.setEditable(false);
         idField.setFilter(s -> s.isEmpty() || s.matches("[a-z0-9_]*"));
-        this.addRenderableWidget(idField);
+        if (!overrideMode) this.addRenderableWidget(idField);
 
         displayNameField = new EditBox(this.font, leftPanelX + 50, panelY + 48, panelW - 80, 16,
                 Component.literal("display"));
         displayNameField.setMaxLength(64);
         displayNameField.setValue(def.displayName != null ? def.displayName : "");
-        this.addRenderableWidget(displayNameField);
+        if (!overrideMode) this.addRenderableWidget(displayNameField);
+
 
         Ingredient input = def.input;
         String inputLabel = (input == null || input.isEmpty()) ? "+" : "✓";
@@ -99,6 +126,7 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
                 Component.literal(inputLabel),
                 btn -> openInputPicker()
         ).bounds(leftPanelX + 16, panelY + 96, SLOT_SIZE, SLOT_SIZE).build());
+
 
         resultSourceBtn = CycleButton.<String>builder(s ->
                         Component.literal("mine".equals(s) ? "My Item" : "Custom"))
@@ -122,6 +150,7 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         resultCountField.setFilter(s -> s.isEmpty() || s.matches("\\d{0,2}"));
         this.addRenderableWidget(resultCountField);
 
+
         xpField = new EditBox(this.font, leftPanelX + 70, panelY + 150, 60, 18,
                 Component.literal("xp"));
         xpField.setMaxLength(6);
@@ -135,6 +164,7 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         cookingTimeField.setValue(String.valueOf(def.cookingTime > 0 ? def.cookingTime : defaultCookingTime()));
         cookingTimeField.setFilter(s -> s.isEmpty() || s.matches("\\d{0,5}"));
         this.addRenderableWidget(cookingTimeField);
+
 
         int footerY = panelY + panelH - 30;
         int btnW = 70;
@@ -151,7 +181,7 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
                 btn -> this.onClose()
         ).bounds(centerX + gap / 2, footerY, btnW, 20).build());
 
-        if (!isNew) {
+        if (!isNew && overrideCallback == null) {
             this.addRenderableWidget(Button.builder(
                     Component.literal("Delete").withStyle(ChatFormatting.RED),
                     btn -> this.minecraft.setScreen(
@@ -204,12 +234,19 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
         if (err != null) { errorMessage = err; return; }
 
         String json = GSON.toJson(def);
+        if (overrideCallback != null) {
+            overrideCallback.accept(def);
+            this.minecraft.setScreen(returnTo);
+            return;
+        }
+
         ModNetworking.CHANNEL.sendToServer(new SaveRecipePacket(modName, def.id, json));
         listParent.onRecipeChanged();
         this.minecraft.setScreen(listParent);
     }
 
     private static String formatFloat(float v) {
+
         if (v == (int) v) return String.valueOf((int) v);
         return String.valueOf(v);
     }
@@ -218,8 +255,15 @@ public class SmeltingRecipeEditorScreen extends ModkitBaseScreen {
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         int labelX = panelX + 16;
 
-        gfx.drawString(this.font, "ID",      labelX, panelY + 30, LABEL_COLOR, true);
-        gfx.drawString(this.font, "Display", labelX, panelY + 52, LABEL_COLOR, true);
+        if (overrideCallback == null) {
+            gfx.drawString(this.font, "ID",      labelX, panelY + 30, LABEL_COLOR, true);
+            gfx.drawString(this.font, "Display", labelX, panelY + 52, LABEL_COLOR, true);
+        } else {
+            gfx.drawString(this.font,
+                    Component.literal("Replacement recipe").withStyle(ChatFormatting.GRAY),
+                    labelX, panelY + 38, 0xFFFFFF);
+        }
+
 
         gfx.drawString(this.font, "Input:",  labelX, panelY + 82, LABEL_COLOR, true);
         gfx.drawString(this.font, "→",       labelX + 56, panelY + 110, LABEL_COLOR, true);

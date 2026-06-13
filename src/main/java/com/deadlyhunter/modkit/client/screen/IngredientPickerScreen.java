@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+
 public class IngredientPickerScreen extends ModkitBaseScreen {
 
     private static final int TEXT = 0xFFFFFF;
@@ -29,11 +30,14 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
     private final Consumer<Ingredient> onApply;
     private final boolean allowEmpty;
 
+
     private final Set<String> ownItemIds = new HashSet<>();
 
     private CycleButton<String> sourceBtn;
     private EditBox idField;
     private String errorMessage = null;
+    private String currentSource = null;
+    private String lastTypedId = null;
 
     public IngredientPickerScreen(Screen parent, String modName,
                                    Ingredient initial, boolean allowEmpty,
@@ -44,7 +48,7 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
         this.allowEmpty = allowEmpty;
         this.onApply = onApply;
         this.panelW = 260;
-        this.panelH = 165;
+        this.panelH = 192;
     }
 
     @Override
@@ -55,20 +59,42 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
         int fieldX = panelX + 90;
         int fieldW = 150;
 
+        if (currentSource == null) {
+            currentSource = initial.source != null ? initial.source : "mine";
+        }
+
         sourceBtn = CycleButton.<String>builder(s ->
-                        Component.literal("mine".equals(s) ? "My Item" : "Custom Item"))
-                .withValues("mine", "other")
-                .withInitialValue(initial.source != null ? initial.source : "mine")
+                        Component.literal(switch (s) {
+                            case "mine" -> "My Item";
+                            case "tag" -> "Tag";
+                            default -> "Custom Item";
+                        }))
+                .withValues("mine", "other", "tag")
+                .withInitialValue(currentSource)
                 .displayOnlyValue()
-                .create(fieldX, panelY + 36, fieldW, 18, Component.literal(""));
+                .create(fieldX, panelY + 36, fieldW, 18, Component.literal(""),
+                        (btn, value) -> {
+                            currentSource = value;
+                            if (idField != null) lastTypedId = idField.getValue();
+                            this.clearWidgets();
+                            this.init();
+                        });
         this.addRenderableWidget(sourceBtn);
 
         idField = new EditBox(this.font, fieldX, panelY + 60, fieldW, 18,
                 Component.literal("id"));
         idField.setMaxLength(80);
-        idField.setValue(initial.id != null ? initial.id : "");
-        idField.setFilter(s -> s.isEmpty() || s.matches("[a-z0-9_:/]*"));
+        idField.setValue(lastTypedId != null ? lastTypedId
+                : (initial.id != null ? initial.id : ""));
+        idField.setFilter(s -> s.isEmpty() || s.matches("[a-z0-9_.:/-]*"));
         this.addRenderableWidget(idField);
+
+        if ("tag".equals(currentSource)) {
+            this.addRenderableWidget(Button.builder(
+                    Component.literal("Browse common tags..."),
+                    btn -> openTagBrowser()
+            ).bounds(fieldX, panelY + 84, fieldW, 18).build());
+        }
 
         int footerY = panelY + panelH - 30;
         int centerX = panelX + panelW / 2;
@@ -94,6 +120,14 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
         ).bounds(centerX + 15, footerY, 95, 20).build());
     }
 
+    private void openTagBrowser() {
+        String current = idField != null ? idField.getValue() : "";
+        this.minecraft.setScreen(new TagBrowserScreen(this, false, current, picked -> {
+            lastTypedId = picked;
+            if (idField != null) idField.setValue(picked);
+        }));
+    }
+
     private void loadOwnItemIds() {
         ownItemIds.clear();
         Path dir = WorkspaceManager.getWorkspacePath(modName).resolve("modkit").resolve("items");
@@ -111,7 +145,7 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
     }
 
     private void tryApply() {
-        String source = sourceBtn.getValue();
+        String source = currentSource != null ? currentSource : sourceBtn.getValue();
         String id = idField.getValue().trim();
         if (id.isEmpty()) {
             errorMessage = "Item id cannot be empty (use Clear instead).";
@@ -128,6 +162,11 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
             if (!ownItemIds.contains(id)) {
                 errorMessage = "No item '" + id + "' in workspace. Available: "
                         + (ownItemIds.isEmpty() ? "(none)" : String.join(", ", ownItemIds));
+                return;
+            }
+        } else if ("tag".equals(source)) {
+            if (!id.contains(":")) {
+                errorMessage = "Tag needs namespace, e.g. forge:ingots/iron";
                 return;
             }
         } else {
@@ -148,7 +187,8 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         int labelX = panelX + 18;
         gfx.drawString(this.font, "Source", labelX, panelY + 40, TEXT, true);
-        gfx.drawString(this.font, "Item ID", labelX, panelY + 64, TEXT, true);
+        String idLabel = "tag".equals(currentSource) ? "Tag ID" : "Item ID";
+        gfx.drawString(this.font, idLabel, labelX, panelY + 64, TEXT, true);
 
         int hintY = panelY + panelH - 50;
         if (errorMessage != null) {
@@ -156,9 +196,12 @@ public class IngredientPickerScreen extends ModkitBaseScreen {
                     Component.literal(errorMessage),
                     panelX + panelW / 2, hintY, 0xFF5555);
         } else {
-            String hint = "mine".equals(sourceBtn != null ? sourceBtn.getValue() : "mine")
-                    ? "Just your item's id, e.g. fire_essence"
-                    : "Full id with namespace, e.g. minecraft:diamond";
+            String src = currentSource != null ? currentSource : "mine";
+            String hint = switch (src) {
+                case "mine" -> "Just your item's id, e.g. fire_essence";
+                case "tag" -> "Any item in this tag works, e.g. forge:ingots/iron";
+                default -> "Full id with namespace, e.g. minecraft:diamond";
+            };
             gfx.drawCenteredString(this.font,
                     Component.literal(hint).withStyle(ChatFormatting.GRAY),
                     panelX + panelW / 2, hintY, 0xFFFFFF);

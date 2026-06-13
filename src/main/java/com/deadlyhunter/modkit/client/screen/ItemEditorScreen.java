@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class ItemEditorScreen extends ModkitBaseScreen {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -34,6 +35,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
     private static final int ROW_H = 18;
     private static final int ROW_GAP = 4;
     private static final int ROW_STEP = ROW_H + ROW_GAP;
+
 
     private static final int LABEL_COLOR = 0xFFFFFF;
 
@@ -76,6 +78,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         int fieldW = 170;
         int y = panelY + 26;
 
+
         idField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("id"));
         idField.setMaxLength(40);
         idField.setValue(def.id != null ? def.id : "");
@@ -84,11 +87,13 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(idField);
         y += ROW_STEP;
 
+
         displayNameField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("display"));
         displayNameField.setMaxLength(64);
         displayNameField.setValue(def.displayName != null ? def.displayName : "");
         this.addRenderableWidget(displayNameField);
         y += ROW_STEP;
+
 
         stackSizeBtn = CycleButton.<Integer>builder(v -> Component.literal(String.valueOf(v)))
                 .withValues(1, 16, 64)
@@ -98,6 +103,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(stackSizeBtn);
         y += ROW_STEP;
 
+
         rarityBtn = CycleButton.<String>builder(s -> Component.literal(cap(s)).withStyle(rarityColor(s)))
                 .withValues("common", "uncommon", "rare", "epic")
                 .withInitialValue(def.rarity != null ? def.rarity : "common")
@@ -106,10 +112,12 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(rarityBtn);
         y += ROW_STEP;
 
+
         glowBox = new Checkbox(fieldX, y, fieldW, ROW_H,
                 Component.literal(def.glow ? "Enabled" : "Disabled"), def.glow);
         this.addRenderableWidget(glowBox);
         y += ROW_STEP;
+
 
         fuelField = new EditBox(this.font, fieldX, y, fieldW, ROW_H, Component.literal("fuel"));
         fuelField.setMaxLength(6);
@@ -118,23 +126,38 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(fuelField);
         y += ROW_STEP;
 
-        int halfW = (fieldW - 6) / 2;
+
+        int thirdW = (fieldW - 12) / 3;
         Button textureBtn = Button.builder(
-                Component.literal(hasTexture ? "Change..." : "Choose..."),
+                Component.literal(hasTexture ? "Texture" : "Texture"),
                 btn -> openTexturePicker()
-        ).bounds(fieldX, y, halfW, ROW_H).build();
+        ).bounds(fieldX, y, thirdW, ROW_H).build();
         if (isNew) {
             textureBtn.active = false;
             textureBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                     Component.literal("Save the item first, then set its texture.")));
+        } else {
+            textureBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.literal(hasTexture ? "Texture set — click to change" : "Choose a texture")));
         }
         this.addRenderableWidget(textureBtn);
 
         Button foodBtn = Button.builder(
-                Component.literal(def.food != null ? "Food ✓" : "Food..."),
+                Component.literal(def.food != null ? "Food ✓" : "Food"),
                 btn -> this.minecraft.setScreen(new FoodEditorScreen(this, modName, def))
-        ).bounds(fieldX + halfW + 6, y, halfW, ROW_H).build();
+        ).bounds(fieldX + thirdW + 6, y, thirdW, ROW_H).build();
         this.addRenderableWidget(foodBtn);
+
+        Button tagsBtn = Button.builder(
+                Component.literal(def.tags != null && !def.tags.isEmpty()
+                        ? "Tags (" + def.tags.size() + ")" : "Tags"),
+                btn -> {
+                    if (def.tags == null) def.tags = new java.util.ArrayList<>();
+                    this.minecraft.setScreen(new TagEditorScreen(this, def.tags, false,
+                            def.id == null || def.id.isBlank() ? "item" : def.id));
+                }
+        ).bounds(fieldX + 2 * (thirdW + 6), y, thirdW, ROW_H).build();
+        this.addRenderableWidget(tagsBtn);
 
         int tooltipBlockY = panelY + 26 + 7 * ROW_STEP + 14;
         int tooltipX = panelX + 18;
@@ -158,6 +181,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         int hintY = tooltipBlockEnd + 8;
         int footerY = hintY + 16;
 
+
         int saveCancelW = 70;
         int saveCancelGap = 6;
         int rightEdge = panelX + panelW - 12;
@@ -180,6 +204,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
                     btn -> this.minecraft.setScreen(
                             new ConfirmDeleteScreen(this, modName, def.id, def.displayName))
             ).bounds(panelX + 12, footerY, 60, 20).build());
+
 
             int topRightX = panelX + panelW - 12;
             int topRightY = panelY + 6;
@@ -220,6 +245,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         hasTexture = Files.isRegularFile(tex);
     }
 
+
     private void trySave() {
         String newId = idField.getValue().trim();
         String newDisplay = displayNameField.getValue().trim();
@@ -253,6 +279,8 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.minecraft.setScreen(listParent);
     }
 
+
+
     private void openTexturePicker() {
 
         Thread picker = new Thread(() -> {
@@ -278,6 +306,7 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         picker.setDaemon(true);
         picker.start();
     }
+
 
     private void handlePickedFile(String chosenPath) {
         Path source = Path.of(chosenPath);
@@ -305,26 +334,24 @@ public class ItemEditorScreen extends ModkitBaseScreen {
         this.init();
     }
 
+
     @Override
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         int labelX = panelX + 18;
+
         int y = panelY + 26 + 4;
 
-        String[] labels = {"ID", "Display", "Stack", "Rarity", "Glow", "Fuel", "Tex / Food"};
+        String[] labels = {"ID", "Display", "Stack", "Rarity", "Glow", "Fuel", "Tex/Food/Tag"};
         for (String l : labels) {
             gfx.drawString(this.font, l, labelX, y, LABEL_COLOR, LABEL_SHADOW);
             y += ROW_STEP;
         }
 
-        if (!isNew) {
-            int textureRowY = panelY + 26 + 6 * ROW_STEP + 4;
-            String status = hasTexture ? "✓" : "—";
-            int color = hasTexture ? 0x118811 : 0x888888;
-            gfx.drawString(this.font, status, panelX + 78, textureRowY, color, LABEL_SHADOW);
-        }
+
 
         int tooltipBlockY = panelY + 26 + 7 * ROW_STEP + 14;
         gfx.drawString(this.font, "Tooltips:", labelX, tooltipBlockY - 12, LABEL_COLOR, LABEL_SHADOW);
+
 
         int tooltipBlockEnd = tooltipBlockY + 3 * ROW_STEP - ROW_GAP;
         int hintY = tooltipBlockEnd + 8;
@@ -339,6 +366,8 @@ public class ItemEditorScreen extends ModkitBaseScreen {
                     panelX + panelW / 2, hintY, 0xFFFFFF);
         }
     }
+
+
 
     private static int snapStack(int v) { return v <= 1 ? 1 : v <= 16 ? 16 : 64; }
     private static String cap(String s) {

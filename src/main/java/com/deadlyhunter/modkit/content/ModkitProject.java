@@ -17,27 +17,19 @@ public class ModkitProject {
     public final String modId;
     public final String displayName;
     public final String author;
-
     public final List<ItemDefinition> itemDefinitions = new ArrayList<>();
     public final List<RegistryObject<ModkitItem>> registeredItems = new ArrayList<>();
-
     public final List<BlockDefinition> blockDefinitions = new ArrayList<>();
     public final List<RegistryObject<net.minecraft.world.level.block.Block>> registeredBlocks = new ArrayList<>();
     public final List<RegistryObject<BlockItem>> registeredBlockItems = new ArrayList<>();
-
     public final List<OreDefinition> oreDefinitions = new ArrayList<>();
-
     public final List<com.deadlyhunter.modkit.content.recipe.RecipeDefinition> recipeDefinitions = new ArrayList<>();
-
+    public final List<com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition> recipeOverrideDefinitions = new ArrayList<>();
     public final List<com.deadlyhunter.modkit.content.weapon.WeaponDefinition> weaponDefinitions = new ArrayList<>();
     public final List<RegistryObject<com.deadlyhunter.modkit.content.weapon.ModkitSword>> registeredSwords = new ArrayList<>();
-
     public final List<com.deadlyhunter.modkit.content.tool.ToolDefinition> toolDefinitions = new ArrayList<>();
-
     public final List<RegistryObject<net.minecraft.world.item.Item>> registeredTools = new ArrayList<>();
-
     public final List<com.deadlyhunter.modkit.content.armor.ArmorSetDefinition> armorSetDefinitions = new ArrayList<>();
-
     public final List<RegistryObject<com.deadlyhunter.modkit.content.armor.ModkitArmorItem>> registeredArmor = new ArrayList<>();
 
     public ModkitProject(String modId, String displayName, String author) {
@@ -51,6 +43,9 @@ public class ModkitProject {
     public List<OreDefinition> getOreDefinitions() { return Collections.unmodifiableList(oreDefinitions); }
     public List<com.deadlyhunter.modkit.content.recipe.RecipeDefinition> getRecipeDefinitions() {
         return Collections.unmodifiableList(recipeDefinitions);
+    }
+    public List<com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition> getRecipeOverrideDefinitions() {
+        return Collections.unmodifiableList(recipeOverrideDefinitions);
     }
     public List<com.deadlyhunter.modkit.content.weapon.WeaponDefinition> getWeaponDefinitions() {
         return Collections.unmodifiableList(weaponDefinitions);

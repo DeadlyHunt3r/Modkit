@@ -41,6 +41,7 @@ public final class ProjectExporter {
         List<BlockDefinition> blocks = loadBlocks(workspace);
         List<com.deadlyhunter.modkit.content.ore.OreDefinition> ores = loadOres(workspace);
         List<com.deadlyhunter.modkit.content.recipe.RecipeDefinition> recipes = loadRecipes(workspace);
+        List<com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition> overrides = loadOverrides(workspace);
         List<com.deadlyhunter.modkit.content.weapon.WeaponDefinition> weapons = loadWeapons(workspace);
         List<com.deadlyhunter.modkit.content.tool.ToolDefinition> tools = loadTools(workspace);
         List<com.deadlyhunter.modkit.content.armor.ArmorSetDefinition> armorSets = loadArmorSets(workspace);
@@ -55,7 +56,13 @@ public final class ProjectExporter {
 
 
                 writeEntry(zip, "META-INF/MANIFEST.MF", ManifestGenerator.generate(info));
-                writeEntry(zip, "META-INF/mods.toml", ModsTomlGenerator.generate(info));
+                java.util.Set<String> loadAfterMods = new java.util.LinkedHashSet<>();
+                for (com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition ov : overrides) {
+                    if (ov.targetNamespace != null && !ov.isVanillaTarget()) {
+                        loadAfterMods.add(ov.targetNamespace);
+                    }
+                }
+                writeEntry(zip, "META-INF/mods.toml", ModsTomlGenerator.generate(info, loadAfterMods));
                 writeEntry(zip, "pack.mcmeta", PackMcmetaGenerator.generate(info));
 
 
@@ -208,11 +215,14 @@ public final class ProjectExporter {
                 copyDirIntoZip(zip, workspace.resolve("data"), "data/");
                 copyDirIntoZip(zip, workspace.resolve("modkit"), "modkit/");
 
+                java.util.Map<String, java.util.List<String>> mergedTags = new java.util.LinkedHashMap<>();
 
-                java.util.Map<String, String> tagFiles =
+                java.util.Map<String, String> autoBlockTags =
                         BlockTagsGenerator.generate(info.modId, blocks);
-                for (java.util.Map.Entry<String, String> e : tagFiles.entrySet()) {
-                    writeEntry(zip, e.getKey(), e.getValue());
+                for (java.util.Map.Entry<String, String> e : autoBlockTags.entrySet()) {
+                    for (String v : extractTagValues(e.getValue())) {
+                        mergedTags.computeIfAbsent(e.getKey(), k -> new java.util.ArrayList<>()).add(v);
+                    }
                 }
 
 
@@ -253,6 +263,52 @@ public final class ProjectExporter {
                                 json);
                     } catch (Exception e) {
                         warnings.add("Recipe '" + recipe.id + "' could not be exported: " + e.getMessage());
+                    }
+                }
+
+
+                java.util.Set<String> usedOverridePaths = new java.util.HashSet<>();
+                for (com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition ov : overrides) {
+                    try {
+                        String path = RecipeOverrideGenerator.getOverridePath(ov);
+                        if (!usedOverridePaths.add(path)) {
+                            warnings.add("Override '" + ov.id + "' targets a recipe already overridden by another entry ("
+                                    + path + ") — skipped.");
+                            continue;
+                        }
+                        String json = RecipeOverrideGenerator.generate(info.modId, ov);
+                        writeEntry(zip, path, json);
+                    } catch (Exception e) {
+                        warnings.add("Override '" + ov.id + "' could not be exported: " + e.getMessage());
+                    }
+                }
+
+
+                java.util.List<TagJsonGenerator.TagFile> userTagFiles = new java.util.ArrayList<>();
+                userTagFiles.addAll(TagJsonGenerator.generateItemTags(info.modId, items));
+                userTagFiles.addAll(TagJsonGenerator.generateBlockTags(info.modId, blocks));
+                for (TagJsonGenerator.TagFile tf : userTagFiles) {
+                    for (String v : extractTagValues(tf.json())) {
+                        mergedTags.computeIfAbsent(tf.path(), k -> new java.util.ArrayList<>()).add(v);
+                    }
+                }
+
+
+                for (java.util.Map.Entry<String, java.util.List<String>> e : mergedTags.entrySet()) {
+                    java.util.LinkedHashSet<String> unique = new java.util.LinkedHashSet<>(e.getValue());
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("{\n  \"replace\": false,\n  \"values\": [\n");
+                    int i = 0;
+                    for (String v : unique) {
+                        sb.append("    \"").append(v).append("\"");
+                        if (++i < unique.size()) sb.append(",");
+                        sb.append("\n");
+                    }
+                    sb.append("  ]\n}\n");
+                    try {
+                        writeEntry(zip, e.getKey(), sb.toString());
+                    } catch (Exception ex) {
+                        warnings.add("Tag file '" + e.getKey() + "' could not be written: " + ex.getMessage());
                     }
                 }
             }
@@ -296,6 +352,12 @@ public final class ProjectExporter {
                 com.deadlyhunter.modkit.content.recipe.RecipeDefinition::validate);
     }
 
+    private static List<com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition> loadOverrides(Path workspace) {
+        return loadDefs(workspace.resolve("modkit").resolve("overrides"),
+                com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition.class,
+                com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition::validate);
+    }
+
     private static List<com.deadlyhunter.modkit.content.weapon.WeaponDefinition> loadWeapons(Path workspace) {
         return loadDefs(workspace.resolve("modkit").resolve("weapons"),
                 com.deadlyhunter.modkit.content.weapon.WeaponDefinition.class,
@@ -336,6 +398,24 @@ public final class ProjectExporter {
         return result;
     }
 
+    private static java.util.List<String> extractTagValues(String tagJson) {
+        java.util.List<String> values = new java.util.ArrayList<>();
+        if (tagJson == null) return values;
+        try {
+            com.google.gson.JsonObject obj =
+                    com.google.gson.JsonParser.parseString(tagJson).getAsJsonObject();
+            if (obj.has("values") && obj.get("values").isJsonArray()) {
+                for (com.google.gson.JsonElement el : obj.getAsJsonArray("values")) {
+                    if (el.isJsonPrimitive()) {
+                        values.add(el.getAsString());
+                    } else if (el.isJsonObject() && el.getAsJsonObject().has("id")) {
+                        values.add(el.getAsJsonObject().get("id").getAsString());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return values;
+    }
 
     private static void writeEntry(ZipOutputStream zip, String path, String content) throws IOException {
         ZipEntry entry = new ZipEntry(path);
@@ -398,6 +478,7 @@ public final class ProjectExporter {
             }
         }
     }
+
 
     public static class ExportResult {
         public final boolean success;

@@ -47,6 +47,7 @@ public final class WorkspaceManager {
         return Files.isDirectory(getWorkspacePath(modName));
     }
 
+
     public static List<String> listWorkspaces() {
         List<String> result = new ArrayList<>();
         if (!Files.isDirectory(workspacesRoot)) return result;
@@ -61,6 +62,7 @@ public final class WorkspaceManager {
         return result;
     }
 
+
     public static CreateResult create(String author, String modName) {
         if (!isValidModName(modName)) {
             return CreateResult.failure("Mod name must be 3-30 characters, only lowercase letters, numbers and underscores.");
@@ -74,16 +76,19 @@ public final class WorkspaceManager {
 
         Path workspace = getWorkspacePath(modName);
         try {
+
             Files.createDirectories(workspace.resolve("assets"));
             Files.createDirectories(workspace.resolve("data"));
             Files.createDirectories(workspace.resolve("modkit").resolve("items"));
             Files.createDirectories(workspace.resolve("modkit").resolve("blocks"));
             Files.createDirectories(workspace.resolve("modkit").resolve("ores"));
             Files.createDirectories(workspace.resolve("modkit").resolve("recipes"));
+            Files.createDirectories(workspace.resolve("modkit").resolve("overrides"));
             Files.createDirectories(workspace.resolve("modkit").resolve("weapons"));
             Files.createDirectories(workspace.resolve("modkit").resolve("tools"));
             Files.createDirectories(workspace.resolve("modkit").resolve("armor"));
             Files.createDirectories(workspace.resolve("assets").resolve("textures").resolve("armor"));
+
 
             ProjectInfo info = new ProjectInfo(author, modName);
             Files.writeString(workspace.resolve("project_info.json"), GSON.toJson(info));
@@ -91,12 +96,14 @@ public final class WorkspaceManager {
             return CreateResult.success(info);
         } catch (IOException e) {
             Modkit.LOGGER.error("[Modkit] Failed to create workspace " + modName, e);
+
             try {
                 deleteRecursive(workspace);
             } catch (IOException ignored) {}
             return CreateResult.failure("Failed to create workspace: " + e.getMessage());
         }
     }
+
 
     public static ProjectInfo loadProject(String modName) {
         Path infoFile = getWorkspacePath(modName).resolve("project_info.json");
@@ -127,6 +134,7 @@ public final class WorkspaceManager {
                     });
         }
     }
+
 
     public static class CreateResult {
         public final boolean success;
