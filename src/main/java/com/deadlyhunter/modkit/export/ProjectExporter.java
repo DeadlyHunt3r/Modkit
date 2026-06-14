@@ -7,7 +7,6 @@ import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import net.minecraftforge.fml.loading.FMLPaths;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -53,7 +52,6 @@ public final class ProjectExporter {
 
             try (ZipOutputStream zip = new ZipOutputStream(
                     Files.newOutputStream(tmpJar, StandardOpenOption.CREATE_NEW))) {
-
 
                 writeEntry(zip, "META-INF/MANIFEST.MF", ManifestGenerator.generate(info));
                 java.util.Set<String> loadAfterMods = new java.util.LinkedHashSet<>();
@@ -176,6 +174,14 @@ public final class ProjectExporter {
 
                 Path workspaceBlockTexDir = workspace.resolve("assets").resolve("textures").resolve("block");
                 for (BlockDefinition def : blocks) {
+                    if (def.isVariant()) {
+                        for (VariantModelGenerator.Asset a : VariantModelGenerator.generate(info.modId, def)) {
+                            writeEntry(zip, a.path(), a.json());
+                            writtenAssetPaths.add(a.path().replace("assets/" + info.modId + "/", ""));
+                        }
+                        continue;
+                    }
+
 
                     java.util.Set<String> presentSuffixes = new java.util.HashSet<>();
                     for (String suffix : BlockDefinition.textureSuffixes(def.textureMode)) {
@@ -331,7 +337,6 @@ public final class ProjectExporter {
         return FMLPaths.GAMEDIR.get().resolve("modkit").resolve("exports");
     }
 
-
     private static List<ItemDefinition> loadItems(Path workspace) {
         return loadDefs(workspace.resolve("modkit").resolve("items"), ItemDefinition.class, ItemDefinition::validate);
     }
@@ -397,6 +402,7 @@ public final class ProjectExporter {
         }
         return result;
     }
+
 
     private static java.util.List<String> extractTagValues(String tagJson) {
         java.util.List<String> values = new java.util.ArrayList<>();

@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public final class BlockTagsGenerator {
 
     private BlockTagsGenerator() {}
@@ -20,6 +19,13 @@ public final class BlockTagsGenerator {
         for (BlockDefinition def : blocks) {
             String resourceId = modId + ":" + def.id;
 
+            if (def.isVariant()) {
+                switch (def.variantType) {
+                    case "fence" -> add(entries, "minecraft:fences", resourceId);
+                    case "wall"  -> add(entries, "minecraft:walls", resourceId);
+                }
+            }
+
 
             String tool = def.tool != null ? def.tool : "any";
             switch (tool) {
@@ -27,7 +33,6 @@ public final class BlockTagsGenerator {
                 case "axe"     -> add(entries, "minecraft:mineable/axe",     resourceId);
                 case "shovel"  -> add(entries, "minecraft:mineable/shovel",  resourceId);
                 case "hoe"     -> add(entries, "minecraft:mineable/hoe",     resourceId);
-
             }
 
 
@@ -55,6 +60,7 @@ public final class BlockTagsGenerator {
     private static void add(Map<String, List<String>> map, String key, String value) {
         map.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
     }
+
 
     private static String tagPathToFilePath(String tagPath) {
         int colon = tagPath.indexOf(':');

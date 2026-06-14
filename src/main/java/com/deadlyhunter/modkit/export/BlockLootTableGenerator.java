@@ -13,6 +13,9 @@ public final class BlockLootTableGenerator {
 
 
     public static String generate(String modId, BlockDefinition def) {
+        if (def.isVariant() && "slab".equals(def.variantType)) {
+            return generateSlabDrop(modId, def);
+        }
         return switch (def.dropMode) {
             case "self"       -> generateSelfDrop(modId, def);
             case "item_mine"  -> generateItemDrop(modId, def, modId + ":" + def.dropItem);
@@ -20,6 +23,44 @@ public final class BlockLootTableGenerator {
             case "nothing"    -> null;
             default           -> generateSelfDrop(modId, def);
         };
+    }
+
+    private static String generateSlabDrop(String modId, BlockDefinition def) {
+        return """
+                {
+                  "type": "minecraft:block",
+                  "pools": [
+                    {
+                      "rolls": 1.0,
+                      "bonus_rolls": 0.0,
+                      "entries": [
+                        {
+                          "type": "minecraft:item",
+                          "name": "%s:%s",
+                          "functions": [
+                            {
+                              "function": "minecraft:set_count",
+                              "count": 2.0,
+                              "conditions": [
+                                {
+                                  "condition": "minecraft:block_state_property",
+                                  "block": "%s:%s",
+                                  "properties": { "type": "double" }
+                                }
+                              ],
+                              "add": false
+                            },
+                            { "function": "minecraft:explosion_decay" }
+                          ]
+                        }
+                      ],
+                      "conditions": [
+                        { "condition": "minecraft:survives_explosion" }
+                      ]
+                    }
+                  ]
+                }
+                """.formatted(modId, def.id, modId, def.id);
     }
 
     public static String generateSelfDrop(String modId, BlockDefinition def) {

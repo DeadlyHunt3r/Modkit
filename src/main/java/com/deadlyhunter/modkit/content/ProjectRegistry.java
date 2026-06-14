@@ -18,7 +18,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
-
 import java.util.*;
 
 
@@ -58,16 +57,14 @@ public final class ProjectRegistry {
         }
 
         for (BlockDefinition def : project.blockDefinitions) {
-            RegistryObject<Block> blockRo = blocks.register(def.id, () -> def.usesFacing()
-                    ? new com.deadlyhunter.modkit.content.block.ModkitFacingBlock(def)
-                    : new ModkitBlock(def));
+            RegistryObject<Block> blockRo = blocks.register(def.id, () -> makeBlock(def));
             project.registeredBlocks.add(blockRo);
+
 
             RegistryObject<BlockItem> blockItemRo = items.register(def.id,
                     () -> new BlockItem(blockRo.get(), new Item.Properties()));
             project.registeredBlockItems.add(blockItemRo);
         }
-
 
         for (com.deadlyhunter.modkit.content.weapon.WeaponDefinition def : project.weaponDefinitions) {
             RegistryObject<com.deadlyhunter.modkit.content.weapon.ModkitSword> swordRo = items.register(def.id,
@@ -86,6 +83,7 @@ public final class ProjectRegistry {
             project.registeredTools.add(toolRo);
         }
 
+
         for (com.deadlyhunter.modkit.content.armor.ArmorSetDefinition def : project.armorSetDefinitions) {
             final com.deadlyhunter.modkit.content.armor.ModkitArmorMaterial material =
                     new com.deadlyhunter.modkit.content.armor.ModkitArmorMaterial(project.modId, def);
@@ -99,7 +97,6 @@ public final class ProjectRegistry {
             }
         }
 
-
         if (!project.isEmpty()) {
             tabs.register("main", () ->
                     CreativeModeTab.builder()
@@ -110,7 +107,6 @@ public final class ProjectRegistry {
                                 for (RegistryObject<ModkitItem> ro : project.registeredItems) {
                                     out.accept(ro.get());
                                 }
-
                                 for (RegistryObject<BlockItem> ro : project.registeredBlockItems) {
                                     out.accept(ro.get());
                                 }
@@ -123,6 +119,7 @@ public final class ProjectRegistry {
                                 for (RegistryObject<Item> ro : project.registeredTools) {
                                     out.accept(ro.get());
                                 }
+
                                 for (RegistryObject<com.deadlyhunter.modkit.content.armor.ModkitArmorItem> ro
                                         : project.registeredArmor) {
                                     out.accept(ro.get());
@@ -147,6 +144,22 @@ public final class ProjectRegistry {
                 project.weaponDefinitions.size(),
                 project.toolDefinitions.size(),
                 project.armorSetDefinitions.size());
+    }
+
+    private static Block makeBlock(BlockDefinition def) {
+        if (def.isVariant()) {
+            return switch (def.variantType) {
+                case "slab"   -> new com.deadlyhunter.modkit.content.block.ModkitSlab(def);
+                case "stairs" -> new com.deadlyhunter.modkit.content.block.ModkitStairs(def);
+                case "wall"   -> new com.deadlyhunter.modkit.content.block.ModkitWall(def);
+                case "fence"  -> new com.deadlyhunter.modkit.content.block.ModkitFence(def);
+                default       -> new ModkitBlock(def);
+            };
+        }
+        if (def.usesFacing()) {
+            return new com.deadlyhunter.modkit.content.block.ModkitFacingBlock(def);
+        }
+        return new ModkitBlock(def);
     }
 
     private static ItemStack pickTabIcon(ModkitProject p) {

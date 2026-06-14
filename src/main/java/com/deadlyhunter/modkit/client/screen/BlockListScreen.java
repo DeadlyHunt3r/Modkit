@@ -26,6 +26,7 @@ public class BlockListScreen extends ModkitBaseScreen {
     private final String modName;
     private final List<BlockDefinition> blocks = new ArrayList<>();
     private int scroll = 0;
+    private boolean cannotMakeVariant = false;
 
     public BlockListScreen(ProjectScreen parent, String modName) {
         super(Component.literal("Blocks — " + modName), parent);
@@ -74,9 +75,19 @@ public class BlockListScreen extends ModkitBaseScreen {
             BlockDefinition def = blocks.get(idx);
             int rowY = listY + i * (ROW_H + ROW_GAP);
 
+            String label = def.isVariant()
+                    ? "§b[" + variantShort(def.variantType) + "]§r " + def.displayName
+                    : def.displayName + " §8(" + def.id + ")";
+
             this.addRenderableWidget(Button.builder(
-                    Component.literal(def.displayName + " §8(" + def.id + ")"),
-                    btn -> this.minecraft.setScreen(new BlockEditorScreen(this, modName, def, false))
+                    Component.literal(label),
+                    btn -> {
+                        if (def.isVariant()) {
+                            this.minecraft.setScreen(new VariantEditorScreen(this, modName, def, false));
+                        } else {
+                            this.minecraft.setScreen(new BlockEditorScreen(this, modName, def, false));
+                        }
+                    }
             ).bounds(listX, rowY, listW, ROW_H).build());
         }
 
@@ -96,15 +107,45 @@ public class BlockListScreen extends ModkitBaseScreen {
         }
 
         int footerY = panelY + panelH - 30;
+        int bw = 76;
         this.addRenderableWidget(Button.builder(
-                Component.literal("+ New Block"),
+                Component.literal("+ Block"),
                 btn -> this.minecraft.setScreen(new BlockEditorScreen(this, modName, newBlank(), true))
-        ).bounds(centerX - 102, footerY, 100, 20).build());
+        ).bounds(centerX - bw - bw / 2 - 4, footerY, bw, 20).build());
+
+        this.addRenderableWidget(Button.builder(
+                Component.literal("+ Variant"),
+                btn -> openNewVariant()
+        ).bounds(centerX - bw / 2, footerY, bw, 20).build());
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Back"),
                 btn -> this.onClose()
-        ).bounds(centerX + 2, footerY, 100, 20).build());
+        ).bounds(centerX + bw / 2 + 4, footerY, bw, 20).build());
+    }
+
+    private void openNewVariant() {
+        boolean hasBase = false;
+        for (BlockDefinition b : blocks) {
+            if (!b.isVariant()) { hasBase = true; break; }
+        }
+        if (!hasBase) {
+            cannotMakeVariant = true;
+            rebuildList();
+            return;
+        }
+        cannotMakeVariant = false;
+        this.minecraft.setScreen(new VariantEditorScreen(this, modName, null, true));
+    }
+
+    private static String variantShort(String type) {
+        return switch (type) {
+            case "slab" -> "Slab";
+            case "stairs" -> "Stair";
+            case "wall" -> "Wall";
+            case "fence" -> "Fence";
+            default -> "?";
+        };
     }
 
     private BlockDefinition newBlank() {
@@ -129,12 +170,18 @@ public class BlockListScreen extends ModkitBaseScreen {
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
         if (blocks.isEmpty()) {
             gfx.drawCenteredString(this.font,
-                    Component.literal("No blocks yet — click + New Block").withStyle(ChatFormatting.GRAY),
+                    Component.literal("No blocks yet — click + Block").withStyle(ChatFormatting.GRAY),
                     this.width / 2, panelY + 80, 0xFFFFFF);
         } else {
             gfx.drawCenteredString(this.font,
                     Component.literal(blocks.size() + " block(s)").withStyle(ChatFormatting.GRAY),
                     this.width / 2, panelY + 24, 0xFFFFFF);
+        }
+        if (cannotMakeVariant) {
+            gfx.drawCenteredString(this.font,
+                    Component.literal("Make a normal block first, then a variant of it.")
+                            .withStyle(ChatFormatting.RED),
+                    this.width / 2, panelY + panelH - 48, 0xFFFFFF);
         }
     }
 

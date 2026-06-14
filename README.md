@@ -157,7 +157,6 @@ audience: people who want to make real content without becoming programmers.
 Modkit is in active development. Releases are published on CurseForge. The source
 in this repository tracks ongoing work and may be ahead of the latest public build.
 
-Recipe Overrides cooming in the next days
 
 ### License
 
