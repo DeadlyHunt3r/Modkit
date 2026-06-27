@@ -2,7 +2,7 @@
 
 **Create your own Minecraft mods in-game — no code required.**
 
-*An in-game modding engine for Minecraft 1.20.1 (Forge).*
+*An in-game modding engine for Minecraft 1.21.1 (NeoForge).*
 
 ### What is Modkit?
 
@@ -64,7 +64,7 @@ JSON written to  .minecraft/modkit/workspaces/<modname>/
 Export  ──►  .jar in  .minecraft/modkit/exports/
       │
       ▼
-Drop the .jar (plus Modkit) into any 1.20.1 Forge instance
+Drop the .jar (plus Modkit) into any 1.21.1 NeoForge instance
 ```
 
 ### Why I made the decisions I did
@@ -93,7 +93,7 @@ I deliberately avoided that:
 
 - Compiling Java in-game would be slow, fragile, and would require a full toolchain.
 - Generated code is hard to validate and a natural place for things to go wrong.
-- Forge already ships `lowcodefml`, a mod loader designed for exactly this — mods
+- NeoForge already ships `lowcodefml`, a mod loader designed for exactly this — mods
   that are *data only*, with no `@Mod` class and no bytecode.
 
 By describing content as JSON and letting the base mod interpret it at runtime, we
@@ -129,8 +129,8 @@ CraftTweaker, …). Modkit just handles the load-order part for you.
 
 #### Why Tags are *merged*, not managed as standalone files
 
-A tag (e.g. `forge:gems`) is a shared, additive list. If you put your `ruby` into
-`forge:gems`, it should appear *alongside* every other mod's gems — not replace them.
+A tag (e.g. `c:gems`) is a shared, additive list. If you put your `ruby` into
+`c:gems`, it should appear *alongside* every other mod's gems — not replace them.
 Modkit writes tag files with `"replace": false`, and on export it **merges** all tag
 contributions (your manual item/block tags *and* the automatic tool-mining tags)
 into one file per tag id, deduplicating entries. You never accidentally wipe another
