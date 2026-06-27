@@ -90,7 +90,7 @@ public class BlockDropsScreen extends ModkitBaseScreen {
         this.addRenderableWidget(maxField);
         y += ROW_STEP;
 
-        fortuneBox = new Checkbox(fieldX, y, fieldW, ROW_H,
+        fortuneBox = checkbox(fieldX, y, fieldW, ROW_H,
                 Component.literal(def.dropFortune ? "Yes" : "No"), def.dropFortune);
         this.addRenderableWidget(fortuneBox);
         y += ROW_STEP;

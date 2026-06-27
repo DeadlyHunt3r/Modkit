@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.network.DeleteRecipePacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -71,7 +71,7 @@ public class ConfirmDeleteRecipeScreen extends ModkitBaseScreen {
     }
 
     private void confirmDelete() {
-        ModNetworking.CHANNEL.sendToServer(new DeleteRecipePacket(modName, recipeId));
+        PacketDistributor.sendToServer(new DeleteRecipePacket(modName, recipeId));
         listScreen.onRecipeChanged();
         this.minecraft.setScreen(listScreen);
     }

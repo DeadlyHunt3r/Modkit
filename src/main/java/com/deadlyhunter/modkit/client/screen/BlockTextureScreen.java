@@ -3,7 +3,7 @@ package com.deadlyhunter.modkit.client.screen;
 import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.content.block.BlockDefinition;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.SetBlockTexturePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -153,7 +153,7 @@ public class BlockTextureScreen extends ModkitBaseScreen {
             return;
         }
 
-        ModNetworking.CHANNEL.sendToServer(new SetBlockTexturePacket(modName, def.id, face, bytes));
+        PacketDistributor.sendToServer(new SetBlockTexturePacket(modName, def.id, face, bytes));
         message = "Uploaded: " + (face.isEmpty() ? "base" : face);
         messageIsError = false;
         this.clearWidgets();

@@ -1,54 +1,41 @@
 package com.deadlyhunter.modkit.network;
 
+import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.core.AuthorConfig;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public record CreateWorkspacePacket(String modName) implements CustomPacketPayload {
 
-public class CreateWorkspacePacket {
+    public static final Type<CreateWorkspacePacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "create_workspace"));
 
-    private final String modName;
+    public static final StreamCodec<ByteBuf, CreateWorkspacePacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(64), CreateWorkspacePacket::modName,
+            CreateWorkspacePacket::new
+    );
 
-    public CreateWorkspacePacket(String modName) {
-        this.modName = modName;
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static void encode(CreateWorkspacePacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.modName, 64);
-    }
-
-    public static CreateWorkspacePacket decode(FriendlyByteBuf buf) {
-        return new CreateWorkspacePacket(buf.readUtf(64));
-    }
-
-    public static void handle(CreateWorkspacePacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ServerPlayer player = ctx.getSender();
-        if (player == null) { ctx.setPacketHandled(true); return; }
-
-        if (!player.hasPermissions(2)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] No permission to create workspaces."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        if (!AuthorConfig.isSet()) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] Set an author prefix first."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        WorkspaceManager.CreateResult result =
-                WorkspaceManager.create(AuthorConfig.getAuthor(), pkt.modName);
-        if (result.success) {
-            player.sendSystemMessage(Component.literal("§a[Modkit] Created workspace '" + pkt.modName + "'."));
-        } else {
-            player.sendSystemMessage(Component.literal("§c[Modkit] " + result.message));
-        }
-        ctx.setPacketHandled(true);
+    public static void handle(CreateWorkspacePacket pkt, IPayloadContext context) {
+        ServerActions.asOp(context, "\u00a7c[Modkit] No permission to create workspaces.", player -> {
+            if (!AuthorConfig.isSet()) {
+                player.sendSystemMessage(Component.literal("\u00a7c[Modkit] Set an author prefix first."));
+                return;
+            }
+            WorkspaceManager.CreateResult result = WorkspaceManager.create(AuthorConfig.getAuthor(), pkt.modName());
+            player.sendSystemMessage(Component.literal(result.success
+                    ? "\u00a7a[Modkit] Created workspace '" + pkt.modName() + "'."
+                    : "\u00a7c[Modkit] " + result.message));
+        });
     }
 }

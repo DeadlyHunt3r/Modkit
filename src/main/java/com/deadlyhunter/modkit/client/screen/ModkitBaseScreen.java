@@ -1,23 +1,18 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 public abstract class ModkitBaseScreen extends Screen {
 
-    private static final ResourceLocation INVENTORY_TEX =
-            new ResourceLocation("textures/gui/container/inventory.png");
-
-    private static final int BORDER = 4;
-
-    private static final int SRC_W = 176;
-    private static final int SRC_H = 166;
-
-    private static final int FILL_SRC_X = 10;
-    private static final int FILL_SRC_Y = 10;
-    private static final int FILL_PATCH = 8;
+    private static final int COLOR_DIM       = 0xC0101010;
+    private static final int COLOR_BORDER    = 0xFF000000;
+    private static final int COLOR_BODY      = 0xFFC6C6C6;
+    private static final int COLOR_HIGHLIGHT = 0xFFFFFFFF;
+    private static final int COLOR_SHADOW    = 0xFF555555;
+    private static final int COLOR_TITLE     = 0xFF404040;
 
     protected int panelW = 248;
     protected int panelH = 200;
@@ -39,56 +34,37 @@ public abstract class ModkitBaseScreen extends Screen {
         this.panelY = (this.height - panelH) / 2;
     }
 
+    protected Checkbox checkbox(int x, int y, int width, int height, Component label, boolean selected) {
+        return Checkbox.builder(label, this.font)
+                .pos(x, y)
+                .selected(selected)
+                .maxWidth(width)
+                .build();
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
+        gfx.fill(0, 0, this.width, this.height, COLOR_DIM);
+    }
+
     @Override
     public void render(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(gfx);
+        this.renderBackground(gfx, mouseX, mouseY, partialTick);
         drawPanel(gfx, panelX, panelY, panelW, panelH);
-        gfx.drawCenteredString(this.font, this.title,
-                panelX + panelW / 2, panelY + 8, 0xFFFFFF);
-        renderPanelContents(gfx, mouseX, mouseY, partialTick);
         super.render(gfx, mouseX, mouseY, partialTick);
+
+        gfx.drawCenteredString(this.font, this.title,
+                panelX + panelW / 2, panelY + 8, COLOR_TITLE);
+        renderPanelContents(gfx, mouseX, mouseY, partialTick);
     }
 
     private void drawPanel(GuiGraphics gfx, int x, int y, int w, int h) {
-        final int sx = 0;
-        final int sy = 0;
-
-        gfx.blit(INVENTORY_TEX, x,                 y,                 sx,                 sy,                 BORDER, BORDER, 256, 256);
-        gfx.blit(INVENTORY_TEX, x + w - BORDER,    y,                 sx + SRC_W - BORDER, sy,                BORDER, BORDER, 256, 256);
-        gfx.blit(INVENTORY_TEX, x,                 y + h - BORDER,    sx,                 sy + SRC_H - BORDER, BORDER, BORDER, 256, 256);
-        gfx.blit(INVENTORY_TEX, x + w - BORDER,    y + h - BORDER,    sx + SRC_W - BORDER, sy + SRC_H - BORDER, BORDER, BORDER, 256, 256);
-
-        final int innerW = w - 2 * BORDER;
-        final int innerH = h - 2 * BORDER;
-        final int srcInnerW = SRC_W - 2 * BORDER;
-
-        tile(gfx, x + BORDER,        y,              innerW, BORDER,
-                sx + BORDER,        sy,             srcInnerW, BORDER, false);
-        tile(gfx, x + BORDER,        y + h - BORDER, innerW, BORDER,
-                sx + BORDER,        sy + SRC_H - BORDER, srcInnerW, BORDER, false);
-
-        tile(gfx, x,                 y + BORDER,     BORDER, innerH,
-                sx,                 sy + BORDER,    BORDER, FILL_PATCH, false);
-        tile(gfx, x + w - BORDER,    y + BORDER,     BORDER, innerH,
-                sx + SRC_W - BORDER, sy + BORDER,   BORDER, FILL_PATCH, false);
-        tile(gfx, x + BORDER,        y + BORDER,     innerW, innerH,
-                FILL_SRC_X,         FILL_SRC_Y,     FILL_PATCH, FILL_PATCH, true);
-    }
-
-    private void tile(GuiGraphics gfx, int dx, int dy, int destW, int destH,
-                      int sx, int sy, int srcW, int srcH, boolean twoD) {
-        int yPos = 0;
-        while (yPos < destH) {
-            int chunkH = Math.min(srcH, destH - yPos);
-            int xPos = 0;
-            while (xPos < destW) {
-                int chunkW = Math.min(srcW, destW - xPos);
-                gfx.blit(INVENTORY_TEX, dx + xPos, dy + yPos,
-                        sx, sy, chunkW, chunkH, 256, 256);
-                xPos += chunkW;
-            }
-            yPos += chunkH;
-        }
+        gfx.fill(x - 1, y - 1, x + w + 1, y + h + 1, COLOR_BORDER);
+        gfx.fill(x, y, x + w, y + h, COLOR_BODY);
+        gfx.fill(x, y, x + w, y + 1, COLOR_HIGHLIGHT);
+        gfx.fill(x, y, x + 1, y + h, COLOR_HIGHLIGHT);
+        gfx.fill(x + w - 1, y + 1, x + w, y + h, COLOR_SHADOW);
+        gfx.fill(x + 1, y + h - 1, x + w, y + h, COLOR_SHADOW);
     }
 
     protected void renderPanelContents(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {

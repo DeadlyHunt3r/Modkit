@@ -25,15 +25,15 @@ public final class TagUtil {
     }
 
     public static final List<String> COMMON_ITEM_TAGS = List.of(
-            "forge:ingots",
-            "forge:gems",
-            "forge:nuggets",
-            "forge:dusts",
-            "forge:ores",
-            "forge:raw_materials",
-            "forge:rods",
-            "forge:gears",
-            "forge:plates",
+            "c:ingots",
+            "c:gems",
+            "c:nuggets",
+            "c:dusts",
+            "c:ores",
+            "c:raw_materials",
+            "c:rods",
+            "c:gears",
+            "c:plates",
             "minecraft:planks",
             "minecraft:logs",
             "minecraft:wool",
@@ -46,8 +46,8 @@ public final class TagUtil {
             "minecraft:shovels",
             "minecraft:hoes",
             "minecraft:music_discs",
-            "forge:tools",
-            "forge:armors",
+            "c:tools",
+            "c:armors",
             "minecraft:piglin_loved"
     );
 
@@ -59,8 +59,8 @@ public final class TagUtil {
             "minecraft:needs_stone_tool",
             "minecraft:needs_iron_tool",
             "minecraft:needs_diamond_tool",
-            "forge:ores",
-            "forge:storage_blocks",
+            "c:ores",
+            "c:storage_blocks",
             "minecraft:logs",
             "minecraft:planks",
             "minecraft:wool",

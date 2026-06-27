@@ -63,7 +63,7 @@ public class FoodEditorScreen extends ModkitBaseScreen {
         int fieldX = panelX + 130;
         int y = panelY + 28;
 
-        isFoodBox = new Checkbox(panelX + 18, y, 200, ROW_H,
+        isFoodBox = checkbox(panelX + 18, y, 200, ROW_H,
                 Component.literal("This item is food"), isFood);
         this.addRenderableWidget(isFoodBox);
         y += ROW_STEP + 2;
@@ -84,13 +84,13 @@ public class FoodEditorScreen extends ModkitBaseScreen {
         this.addRenderableWidget(saturationField);
         y += ROW_STEP;
 
-        alwaysEatBox = new Checkbox(fieldX, y, 200, ROW_H,
+        alwaysEatBox = checkbox(fieldX, y, 200, ROW_H,
                 Component.literal("Can always eat"), food.canAlwaysEat);
         alwaysEatBox.setTooltip(Tooltip.create(Component.literal("Edible even with full hunger (like Golden Apple)")));
         this.addRenderableWidget(alwaysEatBox);
         y += ROW_STEP;
 
-        fastEatBox = new Checkbox(fieldX, y, 200, ROW_H,
+        fastEatBox = checkbox(fieldX, y, 200, ROW_H,
                 Component.literal("Fast to eat"), food.fastEat);
         fastEatBox.setTooltip(Tooltip.create(Component.literal("Eats quickly (like Dried Kelp)")));
         this.addRenderableWidget(fastEatBox);

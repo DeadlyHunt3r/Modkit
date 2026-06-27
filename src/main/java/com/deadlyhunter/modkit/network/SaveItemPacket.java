@@ -5,58 +5,55 @@ import com.deadlyhunter.modkit.content.item.ItemDefinition;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Supplier;
 
-public class SaveItemPacket {
+public record SaveItemPacket(String modName, String itemId, String json) implements CustomPacketPayload {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private final String modName;
-    private final String itemId;
-    private final String json;
+    public static final Type<SaveItemPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "save_item"));
 
-    public SaveItemPacket(String modName, String itemId, String json) {
-        this.modName = modName;
-        this.itemId = itemId;
-        this.json = json;
+    public static final StreamCodec<ByteBuf, SaveItemPacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(64),    SaveItemPacket::modName,
+            ByteBufCodecs.stringUtf8(64),    SaveItemPacket::itemId,
+            ByteBufCodecs.stringUtf8(32768), SaveItemPacket::json,
+            SaveItemPacket::new
+    );
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static void encode(SaveItemPacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.modName, 64);
-        buf.writeUtf(pkt.itemId, 64);
-        buf.writeUtf(pkt.json, 32768);
-    }
+    public static void handle(final SaveItemPacket pkt, final IPayloadContext context) {
+        context.enqueueWork(() -> {
 
-    public static SaveItemPacket decode(FriendlyByteBuf buf) {
-        return new SaveItemPacket(buf.readUtf(64), buf.readUtf(64), buf.readUtf(32768));
-    }
+            if (!(context.player() instanceof ServerPlayer player)) return;
 
-    public static void handle(SaveItemPacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ServerPlayer player = ctx.getSender();
-        if (player == null) { ctx.setPacketHandled(true); return; }
+            if (!player.hasPermissions(2)) {
+                player.sendSystemMessage(Component.literal("\u00a7c[Modkit] No permission to edit projects."));
+                return;
+            }
 
-        if (!player.hasPermissions(2)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] No permission to edit projects."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        String error = trySave(pkt);
-        if (error != null) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] Save failed: " + error));
-        } else {
-            player.sendSystemMessage(Component.literal("§a[Modkit] Saved item '" + pkt.itemId + "'."));
-        }
-        ctx.setPacketHandled(true);
+            String error = trySave(pkt);
+            if (error != null) {
+                player.sendSystemMessage(Component.literal("\u00a7c[Modkit] Save failed: " + error));
+            } else {
+                player.sendSystemMessage(Component.literal("\u00a7a[Modkit] Saved item '" + pkt.itemId + "'."));
+            }
+        });
     }
 
     private static String trySave(SaveItemPacket pkt) {

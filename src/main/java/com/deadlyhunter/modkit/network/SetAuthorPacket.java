@@ -1,46 +1,39 @@
 package com.deadlyhunter.modkit.network;
 
 import com.deadlyhunter.modkit.core.AuthorConfig;
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+import com.deadlyhunter.modkit.Modkit;
 
-public class SetAuthorPacket {
+public record SetAuthorPacket(String prefix) implements CustomPacketPayload {
 
-    private final String prefix;
+    public static final Type<SetAuthorPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "set_author"));
 
-    public SetAuthorPacket(String prefix) {
-        this.prefix = prefix;
+    public static final StreamCodec<ByteBuf, SetAuthorPacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(32), SetAuthorPacket::prefix,
+            SetAuthorPacket::new
+    );
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static void encode(SetAuthorPacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.prefix, 32);
-    }
-
-    public static SetAuthorPacket decode(FriendlyByteBuf buf) {
-        return new SetAuthorPacket(buf.readUtf(32));
-    }
-
-    public static void handle(SetAuthorPacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ServerPlayer player = ctx.getSender();
-        if (player == null) { ctx.setPacketHandled(true); return; }
-
-        if (!player.hasPermissions(2)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] No permission to change author."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        if (!AuthorConfig.isValid(pkt.prefix)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] " + AuthorConfig.getValidationHint()));
-        } else {
-            AuthorConfig.setAuthor(pkt.prefix);
-            player.sendSystemMessage(Component.literal("§a[Modkit] Author set to '" + pkt.prefix + "'."));
-        }
-        ctx.setPacketHandled(true);
+    public static void handle(SetAuthorPacket pkt, IPayloadContext context) {
+        ServerActions.asOp(context, "\u00a7c[Modkit] No permission to change author.", player -> {
+            if (!AuthorConfig.isValid(pkt.prefix())) {
+                player.sendSystemMessage(Component.literal("\u00a7c[Modkit] " + AuthorConfig.getValidationHint()));
+            } else {
+                AuthorConfig.setAuthor(pkt.prefix());
+                player.sendSystemMessage(Component.literal("\u00a7a[Modkit] Author set to '" + pkt.prefix() + "'."));
+            }
+        });
     }
 }

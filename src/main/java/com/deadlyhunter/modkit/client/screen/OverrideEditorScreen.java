@@ -2,7 +2,7 @@ package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.content.recipe.RecipeDefinition;
 import com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.SaveOverridePacket;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -201,7 +201,7 @@ public class OverrideEditorScreen extends ModkitBaseScreen {
         if (err != null) { errorMessage = err; return; }
 
         String json = GSON.toJson(def);
-        ModNetworking.CHANNEL.sendToServer(new SaveOverridePacket(modName, def.id, json));
+        PacketDistributor.sendToServer(new SaveOverridePacket(modName, def.id, json));
         listParent.onOverrideChanged();
         this.minecraft.setScreen(listParent);
     }

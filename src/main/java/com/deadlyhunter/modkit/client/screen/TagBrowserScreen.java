@@ -52,7 +52,7 @@ public class TagBrowserScreen extends ModkitBaseScreen {
 
         tagField = new EditBox(this.font, leftX, panelY + 40, panelW - 90, 18, Component.empty());
         tagField.setMaxLength(80);
-        tagField.setHint(Component.literal("forge:ingots/iron"));
+        tagField.setHint(Component.literal("c:ingots/iron"));
         tagField.setFilter(s -> s.isEmpty() || s.matches("[a-z0-9_.:/-]*"));
         if (prefill != null) { tagField.setValue(prefill); prefill = null; }
         this.addRenderableWidget(tagField);
@@ -107,15 +107,15 @@ public class TagBrowserScreen extends ModkitBaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         List<String> list = suggestions();
         if (list.size() > VISIBLE) {
-            int ns = scroll - (int) Math.signum(delta);
+            int ns = scroll - (int) Math.signum(scrollY);
             ns = Math.max(0, Math.min(list.size() - VISIBLE, ns));
             if (ns != scroll) { scroll = ns; this.clearWidgets(); this.init(); }
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

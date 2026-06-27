@@ -53,14 +53,14 @@ public class ViewJsonScreen extends ModkitBaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (lines.length > visibleLines) {
-            int newScroll = scroll - (int) Math.signum(delta);
+            int newScroll = scroll - (int) Math.signum(scrollY);
             newScroll = Math.max(0, Math.min(lines.length - visibleLines, newScroll));
             if (newScroll != scroll) scroll = newScroll;
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.content.recipe.RecipeDefinition;
 import com.deadlyhunter.modkit.content.recipe.RecipeDefinition.Ingredient;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.SaveRecipePacket;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -224,7 +224,7 @@ public class ShapelessRecipeEditorScreen extends ModkitBaseScreen {
         }
 
         String json = GSON.toJson(def);
-        ModNetworking.CHANNEL.sendToServer(new SaveRecipePacket(modName, def.id, json));
+        PacketDistributor.sendToServer(new SaveRecipePacket(modName, def.id, json));
         listParent.onRecipeChanged();
         this.minecraft.setScreen(listParent);
     }

@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.network.DeleteWeaponPacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -45,7 +45,7 @@ public class ConfirmDeleteWeaponScreen extends ModkitBaseScreen {
     }
 
     private void confirmDelete() {
-        ModNetworking.CHANNEL.sendToServer(new DeleteWeaponPacket(modName, weaponId));
+        PacketDistributor.sendToServer(new DeleteWeaponPacket(modName, weaponId));
         WeaponListScreen list = editorParent.getListParent();
         list.onWeaponChanged();
         this.minecraft.setScreen(list);

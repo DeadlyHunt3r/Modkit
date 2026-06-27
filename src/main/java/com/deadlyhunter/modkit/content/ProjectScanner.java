@@ -3,17 +3,30 @@ package com.deadlyhunter.modkit.content;
 import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.content.block.BlockDefinition;
 import com.deadlyhunter.modkit.content.item.ItemDefinition;
+import com.deadlyhunter.modkit.content.ore.OreDefinition;
+import com.deadlyhunter.modkit.content.recipe.RecipeDefinition;
+import com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition;
+import com.deadlyhunter.modkit.content.weapon.WeaponDefinition;
+import com.deadlyhunter.modkit.content.tool.ToolDefinition;
+import com.deadlyhunter.modkit.content.armor.ArmorSetDefinition;
 import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforgespi.language.IModInfo;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
-
 
 public final class ProjectScanner {
 
@@ -37,7 +50,6 @@ public final class ProjectScanner {
             if (project != null) projects.put(project.modId, project);
         }
 
-
         for (String wsName : WorkspaceManager.listWorkspaces()) {
             ModkitProject project = loadFromWorkspace(wsName);
             if (project != null) {
@@ -52,7 +64,6 @@ public final class ProjectScanner {
         return new ArrayList<>(projects.values());
     }
 
-
     private static ModkitProject loadFromJar(IModInfo modInfo) {
         String modId = modInfo.getModId();
         try {
@@ -65,9 +76,9 @@ public final class ProjectScanner {
             String displayName = modInfo.getDisplayName() != null ? modInfo.getDisplayName() : modId;
             ModkitProject project = new ModkitProject(modId, displayName, "");
 
-            loadItems(project, modRoot.resolve("modkit").resolve("items"),  "jar:" + modId);
+            loadItems(project, modRoot.resolve("modkit").resolve("items"), "jar:" + modId);
             loadBlocks(project, modRoot.resolve("modkit").resolve("blocks"), "jar:" + modId);
-            loadOres(project, modRoot.resolve("modkit").resolve("ores"),   "jar:" + modId);
+            loadOres(project, modRoot.resolve("modkit").resolve("ores"), "jar:" + modId);
             loadRecipes(project, modRoot.resolve("modkit").resolve("recipes"), "jar:" + modId);
             loadOverrides(project, modRoot.resolve("modkit").resolve("overrides"), "jar:" + modId);
             loadWeapons(project, modRoot.resolve("modkit").resolve("weapons"), "jar:" + modId);
@@ -86,9 +97,9 @@ public final class ProjectScanner {
         ModkitProject project = new ModkitProject(info.modId, info.displayName, info.author);
 
         Path wsPath = WorkspaceManager.getWorkspacePath(wsName);
-        loadItems(project,  wsPath.resolve("modkit").resolve("items"),  "ws:" + wsName);
+        loadItems(project, wsPath.resolve("modkit").resolve("items"), "ws:" + wsName);
         loadBlocks(project, wsPath.resolve("modkit").resolve("blocks"), "ws:" + wsName);
-        loadOres(project,   wsPath.resolve("modkit").resolve("ores"),   "ws:" + wsName);
+        loadOres(project, wsPath.resolve("modkit").resolve("ores"), "ws:" + wsName);
         loadRecipes(project, wsPath.resolve("modkit").resolve("recipes"), "ws:" + wsName);
         loadOverrides(project, wsPath.resolve("modkit").resolve("overrides"), "ws:" + wsName);
         loadWeapons(project, wsPath.resolve("modkit").resolve("weapons"), "ws:" + wsName);
@@ -99,76 +110,48 @@ public final class ProjectScanner {
 
     private static void loadItems(ModkitProject project, Path itemsDir, String sourceTag) {
         loadDefs(itemsDir, sourceTag, project.modId, "item",
-                ItemDefinition.class,
-                def -> def.id,
-                ItemDefinition::validate,
-                project.itemDefinitions::add);
+                ItemDefinition.class, def -> def.id, ItemDefinition::validate, project.itemDefinitions::add);
     }
 
     private static void loadBlocks(ModkitProject project, Path blocksDir, String sourceTag) {
         loadDefs(blocksDir, sourceTag, project.modId, "block",
-                BlockDefinition.class,
-                def -> def.id,
-                BlockDefinition::validate,
-                project.blockDefinitions::add);
+                BlockDefinition.class, def -> def.id, BlockDefinition::validate, project.blockDefinitions::add);
     }
 
     private static void loadOres(ModkitProject project, Path oresDir, String sourceTag) {
         loadDefs(oresDir, sourceTag, project.modId, "ore",
-                com.deadlyhunter.modkit.content.ore.OreDefinition.class,
-                def -> def.id,
-                com.deadlyhunter.modkit.content.ore.OreDefinition::validate,
-                project.oreDefinitions::add);
+                OreDefinition.class, def -> def.id, OreDefinition::validate, project.oreDefinitions::add);
     }
 
     private static void loadRecipes(ModkitProject project, Path recipesDir, String sourceTag) {
         loadDefs(recipesDir, sourceTag, project.modId, "recipe",
-                com.deadlyhunter.modkit.content.recipe.RecipeDefinition.class,
-                def -> def.id,
-                com.deadlyhunter.modkit.content.recipe.RecipeDefinition::validate,
-                project.recipeDefinitions::add);
+                RecipeDefinition.class, def -> def.id, RecipeDefinition::validate, project.recipeDefinitions::add);
     }
 
     private static void loadOverrides(ModkitProject project, Path overridesDir, String sourceTag) {
         loadDefs(overridesDir, sourceTag, project.modId, "override",
-                com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition.class,
-                def -> def.id,
-                com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition::validate,
+                RecipeOverrideDefinition.class, def -> def.id, RecipeOverrideDefinition::validate,
                 project.recipeOverrideDefinitions::add);
     }
 
     private static void loadWeapons(ModkitProject project, Path weaponsDir, String sourceTag) {
         loadDefs(weaponsDir, sourceTag, project.modId, "weapon",
-                com.deadlyhunter.modkit.content.weapon.WeaponDefinition.class,
-                def -> def.id,
-                com.deadlyhunter.modkit.content.weapon.WeaponDefinition::validate,
-                project.weaponDefinitions::add);
+                WeaponDefinition.class, def -> def.id, WeaponDefinition::validate, project.weaponDefinitions::add);
     }
 
     private static void loadTools(ModkitProject project, Path toolsDir, String sourceTag) {
         loadDefs(toolsDir, sourceTag, project.modId, "tool",
-                com.deadlyhunter.modkit.content.tool.ToolDefinition.class,
-                def -> def.id,
-                com.deadlyhunter.modkit.content.tool.ToolDefinition::validate,
-                project.toolDefinitions::add);
+                ToolDefinition.class, def -> def.id, ToolDefinition::validate, project.toolDefinitions::add);
     }
 
     private static void loadArmor(ModkitProject project, Path armorDir, String sourceTag) {
         loadDefs(armorDir, sourceTag, project.modId, "armor",
-                com.deadlyhunter.modkit.content.armor.ArmorSetDefinition.class,
-                def -> def.id,
-                com.deadlyhunter.modkit.content.armor.ArmorSetDefinition::validate,
-                project.armorSetDefinitions::add);
+                ArmorSetDefinition.class, def -> def.id, ArmorSetDefinition::validate, project.armorSetDefinitions::add);
     }
 
-    private static <T> void loadDefs(Path dir,
-                                     String sourceTag,
-                                     String projectModId,
-                                     String typeName,
-                                     Class<T> defClass,
-                                     java.util.function.Function<T, String> idGetter,
-                                     java.util.function.Function<T, String> validator,
-                                     java.util.function.Consumer<T> sink) {
+    private static <T> void loadDefs(Path dir, String sourceTag, String projectModId, String typeName,
+                                     Class<T> defClass, Function<T, String> idGetter,
+                                     Function<T, String> validator, Consumer<T> sink) {
         if (!Files.isDirectory(dir)) return;
 
         Set<String> seenIds = new HashSet<>();
@@ -204,13 +187,11 @@ public final class ProjectScanner {
         }
 
         if (loaded > 0 || skipped > 0) {
-            Modkit.LOGGER.info("[Modkit] {}: loaded {} {}(s), skipped {}",
-                    projectModId, loaded, typeName, skipped);
+            Modkit.LOGGER.info("[Modkit] {}: loaded {} {}(s), skipped {}", projectModId, loaded, typeName, skipped);
         }
     }
 
-    private static <T> T tryLoad(Path file, String sourceTag, Class<T> cls,
-                                  java.util.function.Function<T, String> validator) {
+    private static <T> T tryLoad(Path file, String sourceTag, Class<T> cls, Function<T, String> validator) {
         try {
             String json = Files.readString(file);
             T def = GSON.fromJson(json, cls);
@@ -225,8 +206,7 @@ public final class ProjectScanner {
             }
             return def;
         } catch (Exception e) {
-            Modkit.LOGGER.warn("[Modkit] {} -> {} failed to parse: {}",
-                    sourceTag, file.getFileName(), e.getMessage());
+            Modkit.LOGGER.warn("[Modkit] {} -> {} failed to parse: {}", sourceTag, file.getFileName(), e.getMessage());
             return null;
         }
     }

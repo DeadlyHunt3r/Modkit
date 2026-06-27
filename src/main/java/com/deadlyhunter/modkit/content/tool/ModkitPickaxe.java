@@ -5,8 +5,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
+
 import java.util.List;
 
 public class ModkitPickaxe extends PickaxeItem {
@@ -14,12 +15,12 @@ public class ModkitPickaxe extends PickaxeItem {
     private final ToolDefinition definition;
 
     public ModkitPickaxe(ToolDefinition def, String modId) {
-        super(
-                ModkitToolTier.resolve(modId, def),
-                1 + Math.round(def.damageBonus),
-                def.attackSpeed,
-                ModkitToolProperties.build(def)
-        );
+        this(def, ModkitToolTier.resolve(modId, def));
+    }
+
+    private ModkitPickaxe(ToolDefinition def, Tier tier) {
+        super(tier, ModkitToolProperties.build(def)
+                .attributes(PickaxeItem.createAttributes(tier, 1 + Math.round(def.damageBonus), def.attackSpeed)));
         this.definition = def;
     }
 
@@ -41,8 +42,8 @@ public class ModkitPickaxe extends PickaxeItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
         if (definition.tooltipLines != null) {
             for (String line : definition.tooltipLines) {
                 if (line != null && !line.isBlank()) {

@@ -13,7 +13,7 @@ public final class PackMcmetaGenerator {
         return """
                 {
                   "pack": {
-                    "pack_format": 15,
+                    "pack_format": 34,
                     "description": "%s"
                   }
                 }

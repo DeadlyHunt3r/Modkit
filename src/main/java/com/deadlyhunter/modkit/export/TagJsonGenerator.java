@@ -24,7 +24,7 @@ public final class TagJsonGenerator {
                 tagToEntries.computeIfAbsent(tag.trim(), k -> new ArrayList<>()).add(entryId);
             }
         }
-        return buildFiles("items", tagToEntries);
+        return buildFiles("item", tagToEntries);
     }
 
     public static List<TagFile> generateBlockTags(String modId, List<BlockDefinition> blocks) {
@@ -37,7 +37,7 @@ public final class TagJsonGenerator {
                 tagToEntries.computeIfAbsent(tag.trim(), k -> new ArrayList<>()).add(entryId);
             }
         }
-        return buildFiles("blocks", tagToEntries);
+        return buildFiles("block", tagToEntries);
     }
 
     private static List<TagFile> buildFiles(String kind, Map<String, List<String>> tagToEntries) {

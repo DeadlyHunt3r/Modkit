@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.network.DeleteOrePacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -45,7 +45,7 @@ public class ConfirmDeleteOreScreen extends ModkitBaseScreen {
     }
 
     private void confirmDelete() {
-        ModNetworking.CHANNEL.sendToServer(new DeleteOrePacket(modName, oreId));
+        PacketDistributor.sendToServer(new DeleteOrePacket(modName, oreId));
         OreListScreen list = editorParent.getListParent();
         list.onOreChanged();
         this.minecraft.setScreen(list);

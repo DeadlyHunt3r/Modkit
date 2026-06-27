@@ -121,14 +121,14 @@ public class OverrideListScreen extends ModkitBaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (overrides.size() > ROWS_VISIBLE) {
-            int ns = scroll - (int) Math.signum(delta);
+            int ns = scroll - (int) Math.signum(scrollY);
             ns = Math.max(0, Math.min(overrides.size() - ROWS_VISIBLE, ns));
             if (ns != scroll) { scroll = ns; rebuildList(); }
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.network.DeleteWorkspacePacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -42,7 +42,7 @@ public class ConfirmDeleteWorkspaceScreen extends ModkitBaseScreen {
     }
 
     private void confirmDelete() {
-        ModNetworking.CHANNEL.sendToServer(new DeleteWorkspacePacket(modName));
+        PacketDistributor.sendToServer(new DeleteWorkspacePacket(modName));
         if (listParent != null) listParent.refresh();
         this.minecraft.setScreen(listParent);
     }

@@ -3,7 +3,7 @@ package com.deadlyhunter.modkit.client.screen;
 import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.content.armor.ArmorSetDefinition;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.SaveArmorPacket;
 import com.deadlyhunter.modkit.network.SetArmorTexturePacket;
 import com.google.gson.Gson;
@@ -99,16 +99,16 @@ public class ArmorSetEditorScreen extends ModkitBaseScreen {
         y += ROW_H + ROW_GAP;
 
         int cbW = 52;
-        helmetBox = new Checkbox(fieldX, y, cbW, ROW_H, Component.literal("H"), def.hasHelmet);
+        helmetBox = checkbox(fieldX, y, cbW, ROW_H, Component.literal("H"), def.hasHelmet);
         helmetBox.setTooltip(Tooltip.create(Component.literal("Helmet")));
         this.addRenderableWidget(helmetBox);
-        chestBox = new Checkbox(fieldX + cbW + 2, y, cbW, ROW_H, Component.literal("C"), def.hasChestplate);
+        chestBox = checkbox(fieldX + cbW + 2, y, cbW, ROW_H, Component.literal("C"), def.hasChestplate);
         chestBox.setTooltip(Tooltip.create(Component.literal("Chestplate")));
         this.addRenderableWidget(chestBox);
-        legsBox = new Checkbox(fieldX + 2 * (cbW + 2), y, cbW, ROW_H, Component.literal("L"), def.hasLeggings);
+        legsBox = checkbox(fieldX + 2 * (cbW + 2), y, cbW, ROW_H, Component.literal("L"), def.hasLeggings);
         legsBox.setTooltip(Tooltip.create(Component.literal("Leggings")));
         this.addRenderableWidget(legsBox);
-        bootsBox = new Checkbox(fieldX + 3 * (cbW + 2), y, cbW, ROW_H, Component.literal("B"), def.hasBoots);
+        bootsBox = checkbox(fieldX + 3 * (cbW + 2), y, cbW, ROW_H, Component.literal("B"), def.hasBoots);
         bootsBox.setTooltip(Tooltip.create(Component.literal("Boots")));
         this.addRenderableWidget(bootsBox);
         y += ROW_H + ROW_GAP;
@@ -176,7 +176,7 @@ public class ArmorSetEditorScreen extends ModkitBaseScreen {
                 .create(fieldX, y, 80, ROW_H, Component.literal(""));
         this.addRenderableWidget(rarityBtn);
 
-        glowBox = new Checkbox(fieldX + 84, y, fieldW - 84, ROW_H,
+        glowBox = checkbox(fieldX + 84, y, fieldW - 84, ROW_H,
                 Component.literal("Glow"), def.glow);
         this.addRenderableWidget(glowBox);
         y += ROW_H + ROW_GAP;
@@ -322,7 +322,7 @@ public class ArmorSetEditorScreen extends ModkitBaseScreen {
         if (err != null) { errorMessage = err; infoMessage = null; return; }
 
         String json = GSON.toJson(def);
-        ModNetworking.CHANNEL.sendToServer(new SaveArmorPacket(modName, def.id, json));
+        PacketDistributor.sendToServer(new SaveArmorPacket(modName, def.id, json));
         listParent.onArmorChanged();
         this.minecraft.setScreen(listParent);
     }
@@ -384,7 +384,7 @@ public class ArmorSetEditorScreen extends ModkitBaseScreen {
             return;
         }
 
-        ModNetworking.CHANNEL.sendToServer(new SetArmorTexturePacket(modName, fileName, kind, bytes));
+        PacketDistributor.sendToServer(new SetArmorTexturePacket(modName, fileName, kind, bytes));
         errorMessage = null;
         infoMessage = "Texture uploaded: " + fileName + ".png";
         this.clearWidgets();

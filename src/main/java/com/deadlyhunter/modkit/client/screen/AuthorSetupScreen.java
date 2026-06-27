@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.core.AuthorConfig;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.SetAuthorPacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -54,7 +54,7 @@ public class AuthorSetupScreen extends ModkitBaseScreen {
             return;
         }
         AuthorConfig.setAuthor(val);
-        ModNetworking.CHANNEL.sendToServer(new SetAuthorPacket(val));
+        PacketDistributor.sendToServer(new SetAuthorPacket(val));
         this.minecraft.setScreen(new ModkitMainScreen());
     }
 

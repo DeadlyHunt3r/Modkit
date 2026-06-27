@@ -1,153 +1,42 @@
 package com.deadlyhunter.modkit.network;
 
-import com.deadlyhunter.modkit.Modkit;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class ModNetworking {
 
     private static final String PROTOCOL_VERSION = "1";
-    private static int packetId = 0;
-
-    public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
-            .named(new ResourceLocation(Modkit.MODID, "main"))
-            .networkProtocolVersion(() -> PROTOCOL_VERSION)
-            .clientAcceptedVersions(PROTOCOL_VERSION::equals)
-            .serverAcceptedVersions(PROTOCOL_VERSION::equals)
-            .simpleChannel();
 
     private ModNetworking() {}
 
-    public static void register() {
+    public static void register(final RegisterPayloadHandlersEvent event) {
+        final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
 
-        CHANNEL.messageBuilder(OpenModkitGuiPacket.class, packetId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(OpenModkitGuiPacket::encode)
-                .decoder(OpenModkitGuiPacket::decode)
-                .consumerMainThread(OpenModkitGuiPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveItemPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveItemPacket::encode)
-                .decoder(SaveItemPacket::decode)
-                .consumerMainThread(SaveItemPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteItemPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteItemPacket::encode)
-                .decoder(DeleteItemPacket::decode)
-                .consumerMainThread(DeleteItemPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SetTexturePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetTexturePacket::encode)
-                .decoder(SetTexturePacket::decode)
-                .consumerMainThread(SetTexturePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveBlockPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveBlockPacket::encode)
-                .decoder(SaveBlockPacket::decode)
-                .consumerMainThread(SaveBlockPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteBlockPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteBlockPacket::encode)
-                .decoder(DeleteBlockPacket::decode)
-                .consumerMainThread(DeleteBlockPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SetBlockTexturePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetBlockTexturePacket::encode)
-                .decoder(SetBlockTexturePacket::decode)
-                .consumerMainThread(SetBlockTexturePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveOrePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveOrePacket::encode)
-                .decoder(SaveOrePacket::decode)
-                .consumerMainThread(SaveOrePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteOrePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteOrePacket::encode)
-                .decoder(DeleteOrePacket::decode)
-                .consumerMainThread(DeleteOrePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveRecipePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveRecipePacket::encode)
-                .decoder(SaveRecipePacket::decode)
-                .consumerMainThread(SaveRecipePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteRecipePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteRecipePacket::encode)
-                .decoder(DeleteRecipePacket::decode)
-                .consumerMainThread(DeleteRecipePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveOverridePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveOverridePacket::encode)
-                .decoder(SaveOverridePacket::decode)
-                .consumerMainThread(SaveOverridePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteOverridePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteOverridePacket::encode)
-                .decoder(DeleteOverridePacket::decode)
-                .consumerMainThread(DeleteOverridePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveWeaponPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveWeaponPacket::encode)
-                .decoder(SaveWeaponPacket::decode)
-                .consumerMainThread(SaveWeaponPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteWeaponPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteWeaponPacket::encode)
-                .decoder(DeleteWeaponPacket::decode)
-                .consumerMainThread(DeleteWeaponPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveToolPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveToolPacket::encode)
-                .decoder(SaveToolPacket::decode)
-                .consumerMainThread(SaveToolPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteToolPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteToolPacket::encode)
-                .decoder(DeleteToolPacket::decode)
-                .consumerMainThread(DeleteToolPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SaveArmorPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SaveArmorPacket::encode)
-                .decoder(SaveArmorPacket::decode)
-                .consumerMainThread(SaveArmorPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteArmorPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteArmorPacket::encode)
-                .decoder(DeleteArmorPacket::decode)
-                .consumerMainThread(DeleteArmorPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SetArmorTexturePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetArmorTexturePacket::encode)
-                .decoder(SetArmorTexturePacket::decode)
-                .consumerMainThread(SetArmorTexturePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(SetAuthorPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetAuthorPacket::encode)
-                .decoder(SetAuthorPacket::decode)
-                .consumerMainThread(SetAuthorPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(CreateWorkspacePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(CreateWorkspacePacket::encode)
-                .decoder(CreateWorkspacePacket::decode)
-                .consumerMainThread(CreateWorkspacePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(DeleteWorkspacePacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(DeleteWorkspacePacket::encode)
-                .decoder(DeleteWorkspacePacket::decode)
-                .consumerMainThread(DeleteWorkspacePacket::handle)
-                .add();
-        CHANNEL.messageBuilder(UpdateProjectInfoPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(UpdateProjectInfoPacket::encode)
-                .decoder(UpdateProjectInfoPacket::decode)
-                .consumerMainThread(UpdateProjectInfoPacket::handle)
-                .add();
-        CHANNEL.messageBuilder(ExportProjectPacket.class, packetId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(ExportProjectPacket::encode)
-                .decoder(ExportProjectPacket::decode)
-                .consumerMainThread(ExportProjectPacket::handle)
-                .add();
+        registrar.playToClient(OpenModkitGuiPacket.TYPE, OpenModkitGuiPacket.STREAM_CODEC, OpenModkitGuiPacket::handle);
 
-        Modkit.LOGGER.info("[Modkit] Network channel registered.");
+        registrar.playToServer(SaveItemPacket.TYPE,           SaveItemPacket.STREAM_CODEC,           SaveItemPacket::handle);
+        registrar.playToServer(DeleteItemPacket.TYPE,         DeleteItemPacket.STREAM_CODEC,         DeleteItemPacket::handle);
+        registrar.playToServer(SetTexturePacket.TYPE,         SetTexturePacket.STREAM_CODEC,         SetTexturePacket::handle);
+        registrar.playToServer(SaveBlockPacket.TYPE,          SaveBlockPacket.STREAM_CODEC,          SaveBlockPacket::handle);
+        registrar.playToServer(DeleteBlockPacket.TYPE,        DeleteBlockPacket.STREAM_CODEC,        DeleteBlockPacket::handle);
+        registrar.playToServer(SetBlockTexturePacket.TYPE,    SetBlockTexturePacket.STREAM_CODEC,    SetBlockTexturePacket::handle);
+        registrar.playToServer(SaveOrePacket.TYPE,            SaveOrePacket.STREAM_CODEC,            SaveOrePacket::handle);
+        registrar.playToServer(DeleteOrePacket.TYPE,          DeleteOrePacket.STREAM_CODEC,          DeleteOrePacket::handle);
+        registrar.playToServer(SaveRecipePacket.TYPE,         SaveRecipePacket.STREAM_CODEC,         SaveRecipePacket::handle);
+        registrar.playToServer(DeleteRecipePacket.TYPE,       DeleteRecipePacket.STREAM_CODEC,       DeleteRecipePacket::handle);
+        registrar.playToServer(SaveOverridePacket.TYPE,       SaveOverridePacket.STREAM_CODEC,       SaveOverridePacket::handle);
+        registrar.playToServer(DeleteOverridePacket.TYPE,     DeleteOverridePacket.STREAM_CODEC,     DeleteOverridePacket::handle);
+        registrar.playToServer(SaveWeaponPacket.TYPE,         SaveWeaponPacket.STREAM_CODEC,         SaveWeaponPacket::handle);
+        registrar.playToServer(DeleteWeaponPacket.TYPE,       DeleteWeaponPacket.STREAM_CODEC,       DeleteWeaponPacket::handle);
+        registrar.playToServer(SaveToolPacket.TYPE,           SaveToolPacket.STREAM_CODEC,           SaveToolPacket::handle);
+        registrar.playToServer(DeleteToolPacket.TYPE,         DeleteToolPacket.STREAM_CODEC,         DeleteToolPacket::handle);
+        registrar.playToServer(SaveArmorPacket.TYPE,          SaveArmorPacket.STREAM_CODEC,          SaveArmorPacket::handle);
+        registrar.playToServer(DeleteArmorPacket.TYPE,        DeleteArmorPacket.STREAM_CODEC,        DeleteArmorPacket::handle);
+        registrar.playToServer(SetArmorTexturePacket.TYPE,    SetArmorTexturePacket.STREAM_CODEC,    SetArmorTexturePacket::handle);
+        registrar.playToServer(SetAuthorPacket.TYPE,          SetAuthorPacket.STREAM_CODEC,          SetAuthorPacket::handle);
+        registrar.playToServer(CreateWorkspacePacket.TYPE,    CreateWorkspacePacket.STREAM_CODEC,    CreateWorkspacePacket::handle);
+        registrar.playToServer(DeleteWorkspacePacket.TYPE,    DeleteWorkspacePacket.STREAM_CODEC,    DeleteWorkspacePacket::handle);
+        registrar.playToServer(UpdateProjectInfoPacket.TYPE,  UpdateProjectInfoPacket.STREAM_CODEC,  UpdateProjectInfoPacket::handle);
+        registrar.playToServer(ExportProjectPacket.TYPE,      ExportProjectPacket.STREAM_CODEC,      ExportProjectPacket::handle);
     }
 }

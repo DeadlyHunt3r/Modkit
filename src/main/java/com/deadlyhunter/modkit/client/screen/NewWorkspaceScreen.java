@@ -2,7 +2,7 @@ package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.deadlyhunter.modkit.network.CreateWorkspacePacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -59,7 +59,7 @@ public class NewWorkspaceScreen extends ModkitBaseScreen {
             return;
         }
 
-        ModNetworking.CHANNEL.sendToServer(new CreateWorkspacePacket(name));
+        PacketDistributor.sendToServer(new CreateWorkspacePacket(name));
         if (listParent != null) listParent.refresh();
         this.minecraft.setScreen(listParent);
     }

@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.network.DeleteOverridePacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -45,7 +45,7 @@ public class ConfirmDeleteOverrideScreen extends ModkitBaseScreen {
     }
 
     private void confirmDelete() {
-        ModNetworking.CHANNEL.sendToServer(new DeleteOverridePacket(modName, overrideId));
+        PacketDistributor.sendToServer(new DeleteOverridePacket(modName, overrideId));
         OverrideListScreen list = editorParent.getListParent();
         list.onOverrideChanged();
         this.minecraft.setScreen(list);

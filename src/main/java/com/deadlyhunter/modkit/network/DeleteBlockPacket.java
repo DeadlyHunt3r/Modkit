@@ -2,65 +2,52 @@ package com.deadlyhunter.modkit.network;
 
 import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Supplier;
 
+public record DeleteBlockPacket(String modName, String blockId) implements CustomPacketPayload {
 
-public class DeleteBlockPacket {
+    public static final Type<DeleteBlockPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "delete_block"));
 
-    private final String modName;
-    private final String blockId;
+    public static final StreamCodec<ByteBuf, DeleteBlockPacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(64), DeleteBlockPacket::modName,
+            ByteBufCodecs.stringUtf8(64), DeleteBlockPacket::blockId,
+            DeleteBlockPacket::new
+    );
 
-    public DeleteBlockPacket(String modName, String blockId) {
-        this.modName = modName;
-        this.blockId = blockId;
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static void encode(DeleteBlockPacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.modName, 64);
-        buf.writeUtf(pkt.blockId, 64);
-    }
-
-    public static DeleteBlockPacket decode(FriendlyByteBuf buf) {
-        return new DeleteBlockPacket(buf.readUtf(64), buf.readUtf(64));
-    }
-
-    public static void handle(DeleteBlockPacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ServerPlayer player = ctx.getSender();
-        if (player == null) { ctx.setPacketHandled(true); return; }
-
-        if (!player.hasPermissions(2)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] No permission to delete blocks."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        String error = tryDelete(pkt);
-        if (error != null) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] Delete failed: " + error));
-        } else {
-            player.sendSystemMessage(Component.literal("§a[Modkit] Deleted block '" + pkt.blockId + "'."));
-        }
-        ctx.setPacketHandled(true);
+    public static void handle(DeleteBlockPacket pkt, IPayloadContext context) {
+        ServerActions.asOp(context, "\u00a7c[Modkit] No permission to delete blocks.", player -> {
+            String error = tryDelete(pkt);
+            player.sendSystemMessage(Component.literal(error != null
+                    ? "\u00a7c[Modkit] Delete failed: " + error
+                    : "\u00a7a[Modkit] Deleted block '" + pkt.blockId() + "'."));
+        });
     }
 
     private static String tryDelete(DeleteBlockPacket pkt) {
-        if (!WorkspaceManager.exists(pkt.modName)) return "Workspace not found.";
-        if (!pkt.blockId.matches("[a-z0-9_]{1,40}")) return "Invalid block id.";
+        if (!WorkspaceManager.exists(pkt.modName())) return "Workspace not found.";
+        if (!pkt.blockId().matches("[a-z0-9_]{1,40}")) return "Invalid block id.";
 
-        Path workspace = WorkspaceManager.getWorkspacePath(pkt.modName);
-        Path jsonFile = workspace.resolve("modkit").resolve("blocks").resolve(pkt.blockId + ".json");
-        Path pngFile = workspace.resolve("assets").resolve("textures").resolve("block").resolve(pkt.blockId + ".png");
+        Path workspace = WorkspaceManager.getWorkspacePath(pkt.modName());
+        Path jsonFile = workspace.resolve("modkit").resolve("blocks").resolve(pkt.blockId() + ".json");
+        Path pngFile = workspace.resolve("assets").resolve("textures").resolve("block").resolve(pkt.blockId() + ".png");
 
-        if (!Files.exists(jsonFile)) return "Block '" + pkt.blockId + "' not found.";
+        if (!Files.exists(jsonFile)) return "Block '" + pkt.blockId() + "' not found.";
 
         try {
             Files.delete(jsonFile);
@@ -72,14 +59,15 @@ public class DeleteBlockPacket {
 
             Path texDir = workspace.resolve("assets").resolve("textures").resolve("block");
             for (String suffix : new String[]{"front", "top", "bottom", "north", "south", "east", "west", "up", "down"}) {
-                Path faceTex = texDir.resolve(pkt.blockId + "_" + suffix + ".png");
+                Path faceTex = texDir.resolve(pkt.blockId() + "_" + suffix + ".png");
                 try {
                     if (Files.exists(faceTex)) Files.delete(faceTex);
-                } catch (IOException ignore) { /* not fatal */ }
+                } catch (IOException ignore) {
+                }
             }
             return null;
         } catch (IOException e) {
-            Modkit.LOGGER.error("[Modkit] Delete error for " + pkt.blockId, e);
+            Modkit.LOGGER.error("[Modkit] Delete error for " + pkt.blockId(), e);
             return "I/O error: " + e.getMessage();
         }
     }

@@ -3,7 +3,7 @@ package com.deadlyhunter.modkit.client.screen;
 import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.content.weapon.WeaponDefinition;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.SaveWeaponPacket;
 import com.deadlyhunter.modkit.network.SetTexturePacket;
 import com.google.gson.Gson;
@@ -169,7 +169,7 @@ public class WeaponEditorScreen extends ModkitBaseScreen {
                 .create(leftFieldX, y, 80, ROW_H, Component.literal(""));
         this.addRenderableWidget(rarityBtn);
 
-        glowBox = new Checkbox(leftFieldX + 84, y, leftFieldW - 84, ROW_H,
+        glowBox = checkbox(leftFieldX + 84, y, leftFieldW - 84, ROW_H,
                 Component.literal("Glow"), def.glow);
         this.addRenderableWidget(glowBox);
         y += ROW_H + ROW_GAP;
@@ -296,7 +296,7 @@ public class WeaponEditorScreen extends ModkitBaseScreen {
         if (err != null) { errorMessage = err; return; }
 
         String json = GSON.toJson(def);
-        ModNetworking.CHANNEL.sendToServer(new SaveWeaponPacket(modName, def.id, json));
+        PacketDistributor.sendToServer(new SaveWeaponPacket(modName, def.id, json));
         listParent.onWeaponChanged();
         this.minecraft.setScreen(listParent);
     }
@@ -343,7 +343,7 @@ public class WeaponEditorScreen extends ModkitBaseScreen {
             return;
         }
 
-        ModNetworking.CHANNEL.sendToServer(new SetTexturePacket(modName, def.id, bytes));
+        PacketDistributor.sendToServer(new SetTexturePacket(modName, def.id, bytes));
         hasTexture = true;
         errorMessage = null;
         this.clearWidgets();

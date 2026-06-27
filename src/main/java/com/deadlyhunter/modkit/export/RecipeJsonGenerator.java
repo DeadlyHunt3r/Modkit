@@ -6,13 +6,12 @@ import com.deadlyhunter.modkit.content.recipe.RecipeDefinition.Ingredient;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-
 public final class RecipeJsonGenerator {
 
     private RecipeJsonGenerator() {}
 
     public static String getRecipePath(String modId, String recipeId) {
-        return "data/" + modId + "/recipes/" + recipeId + ".json";
+        return "data/" + modId + "/recipe/" + recipeId + ".json";
     }
 
     public static String generate(String modId, RecipeDefinition def) {
@@ -28,7 +27,6 @@ public final class RecipeJsonGenerator {
         };
     }
 
-
     private static String generateShaped(String modId, RecipeDefinition def) {
         StringBuilder patternJson = new StringBuilder();
         patternJson.append("[");
@@ -37,7 +35,6 @@ public final class RecipeJsonGenerator {
             if (i < def.pattern.size() - 1) patternJson.append(", ");
         }
         patternJson.append("]");
-
 
         Set<Character> usedKeys = new LinkedHashSet<>();
         for (String row : def.pattern) {
@@ -98,7 +95,7 @@ public final class RecipeJsonGenerator {
                 {
                   "type": "%s",
                   "ingredient": %s,
-                  "result": "%s",
+                  "result": { "id": "%s" },
                   "experience": %s,
                   "cookingtime": %d
                 }
@@ -110,7 +107,6 @@ public final class RecipeJsonGenerator {
                 def.cookingTime);
     }
 
-
     private static String generateSmithing(String modId, RecipeDefinition def) {
         String resultId = resolveItemId(modId, def.resultSource, def.resultItem);
         return """
@@ -119,7 +115,7 @@ public final class RecipeJsonGenerator {
                   "template": %s,
                   "base": %s,
                   "addition": %s,
-                  "result": { "item": "%s" }
+                  "result": { "id": "%s" }
                 }
                 """.formatted(
                 ingredientJson(modId, def.smithingTemplate),
@@ -134,16 +130,13 @@ public final class RecipeJsonGenerator {
                 {
                   "type": "minecraft:stonecutting",
                   "ingredient": %s,
-                  "result": "%s",
-                  "count": %d
+                  "result": { "id": "%s", "count": %d }
                 }
                 """.formatted(
                 ingredientJson(modId, def.input),
                 resultId,
                 Math.max(1, def.resultCount));
     }
-
-
 
     private static String ingredientJson(String modId, Ingredient ing) {
         if (ing != null && ing.isTag()) {
@@ -153,13 +146,12 @@ public final class RecipeJsonGenerator {
         return "{ \"item\": \"" + id + "\" }";
     }
 
-
     private static String resultJson(String modId, RecipeDefinition def) {
         String id = resolveItemId(modId, def.resultSource, def.resultItem);
         if (def.resultCount <= 1) {
-            return "{ \"item\": \"" + id + "\" }";
+            return "{ \"id\": \"" + id + "\" }";
         }
-        return "{ \"item\": \"" + id + "\", \"count\": " + def.resultCount + " }";
+        return "{ \"id\": \"" + id + "\", \"count\": " + def.resultCount + " }";
     }
 
     private static String resolveItemId(String modId, String source, String id) {

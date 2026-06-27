@@ -3,7 +3,7 @@ package com.deadlyhunter.modkit.client.screen;
 import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.deadlyhunter.modkit.network.ExportProjectPacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -64,7 +64,7 @@ public class ProjectScreen extends ModkitBaseScreen {
         this.addRenderableWidget(Button.builder(
                 Component.literal("Export to .jar"),
                 btn -> {
-                    ModNetworking.CHANNEL.sendToServer(new ExportProjectPacket(modName));
+                    PacketDistributor.sendToServer(new ExportProjectPacket(modName));
 
                 }
         ).bounds(centerX - 102, footerY, 100, 20).build());

@@ -2,7 +2,7 @@ package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.deadlyhunter.modkit.network.UpdateProjectInfoPacket;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -92,7 +92,7 @@ public class ProjectSettingsScreen extends ModkitBaseScreen {
     }
 
     private void trySave() {
-        ModNetworking.CHANNEL.sendToServer(new UpdateProjectInfoPacket(
+        PacketDistributor.sendToServer(new UpdateProjectInfoPacket(
                 modName,
                 displayNameField.getValue().trim(),
                 descriptionField.getValue().trim(),

@@ -1,16 +1,23 @@
 package com.deadlyhunter.modkit.content.item;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.item.crafting.RecipeType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-
 
 public class ModkitItem extends Item {
 
@@ -31,24 +38,23 @@ public class ModkitItem extends Item {
                 .rarity(parseRarity(def.rarity));
 
         if (def.food != null) {
-            net.minecraft.world.food.FoodProperties.Builder fb =
-                    new net.minecraft.world.food.FoodProperties.Builder()
-                            .nutrition(def.food.nutrition)
-                            .saturationMod(def.food.saturation);
-            if (def.food.canAlwaysEat) fb.alwaysEat();
+            FoodProperties.Builder fb = new FoodProperties.Builder()
+                    .nutrition(def.food.nutrition)
+                    .saturationModifier(def.food.saturation);
+
+            if (def.food.canAlwaysEat) fb.alwaysEdible();
             if (def.food.fastEat) fb.fast();
+
             if (def.food.effects != null) {
                 for (ItemDefinition.FoodEffect e : def.food.effects) {
-                    net.minecraft.resources.ResourceLocation loc =
-                            net.minecraft.resources.ResourceLocation.tryParse(e.effect);
+                    ResourceLocation loc = ResourceLocation.tryParse(e.effect);
                     if (loc == null) continue;
-                    net.minecraft.world.effect.MobEffect mob =
-                            net.minecraftforge.registries.ForgeRegistries.MOB_EFFECTS.getValue(loc);
-                    if (mob == null) continue;
-                    final net.minecraft.world.effect.MobEffectInstance instance =
-                            new net.minecraft.world.effect.MobEffectInstance(
-                                    mob, e.duration, e.amplifier);
-                    fb.effect(() -> instance, e.chance);
+
+                    ResourceKey<MobEffect> key = ResourceKey.create(Registries.MOB_EFFECT, loc);
+                    Holder<MobEffect> holder = BuiltInRegistries.MOB_EFFECT.getHolder(key).orElse(null);
+                    if (holder == null) continue;
+
+                    fb.effect(new MobEffectInstance(holder, e.duration, e.amplifier), e.chance);
                 }
             }
             props.food(fb.build());
@@ -67,21 +73,19 @@ public class ModkitItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level,
-                                List<Component> tooltip, TooltipFlag flag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         if (definition.tooltipLines != null) {
             for (String line : definition.tooltipLines) {
                 tooltip.add(Component.literal(line).withStyle(ChatFormatting.GRAY));
             }
         }
-        super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 
     @Override
     public boolean isFoil(ItemStack stack) {
         return definition.glow || super.isFoil(stack);
     }
-
 
     @Override
     public Component getName(ItemStack stack) {
@@ -93,9 +97,8 @@ public class ModkitItem extends Item {
         return Component.literal(definition.displayName);
     }
 
-
     @Override
-    public int getBurnTime(ItemStack itemStack, @Nullable net.minecraft.world.item.crafting.RecipeType<?> recipeType) {
+    public int getBurnTime(ItemStack itemStack, @Nullable RecipeType<?> recipeType) {
         return definition.fuelBurnTime > 0 ? definition.fuelBurnTime : super.getBurnTime(itemStack, recipeType);
     }
 }

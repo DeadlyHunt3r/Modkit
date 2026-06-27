@@ -9,7 +9,7 @@ public final class RecipeOverrideGenerator {
     public static String getOverridePath(RecipeOverrideDefinition def) {
         String ns = (def.targetNamespace == null || def.targetNamespace.isBlank())
                 ? "minecraft" : def.targetNamespace;
-        return "data/" + ns + "/recipes/" + def.targetRecipe + ".json";
+        return "data/" + ns + "/recipe/" + def.targetRecipe + ".json";
     }
 
     public static String generate(String modId, RecipeOverrideDefinition def) {

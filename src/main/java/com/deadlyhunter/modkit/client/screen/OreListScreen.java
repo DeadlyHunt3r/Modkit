@@ -150,14 +150,14 @@ public class OreListScreen extends ModkitBaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (ores.size() > ROWS_VISIBLE) {
-            int newScroll = scroll - (int) Math.signum(delta);
+            int newScroll = scroll - (int) Math.signum(scrollY);
             newScroll = Math.max(0, Math.min(ores.size() - ROWS_VISIBLE, newScroll));
             if (newScroll != scroll) { scroll = newScroll; rebuildList(); }
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

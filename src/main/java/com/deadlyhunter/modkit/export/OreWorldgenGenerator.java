@@ -15,7 +15,7 @@ public final class OreWorldgenGenerator {
     }
 
     public static String getBiomeModifierPath(String modId, String oreId) {
-        return "data/" + modId + "/forge/biome_modifier/" + oreId + ".json";
+        return "data/" + modId + "/neoforge/biome_modifier/" + oreId + ".json";
     }
 
     public static String generateConfiguredFeature(String modId, OreDefinition def) {
@@ -101,7 +101,7 @@ public final class OreWorldgenGenerator {
 
         return """
                 {
-                  "type": "forge:add_features",
+                  "type": "neoforge:add_features",
                   "biomes": "%s",
                   "features": "%s",
                   "step": "underground_ores"

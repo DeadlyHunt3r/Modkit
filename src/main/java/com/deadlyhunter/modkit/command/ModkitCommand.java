@@ -4,7 +4,6 @@ import com.deadlyhunter.modkit.core.AuthorConfig;
 import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.deadlyhunter.modkit.export.ProjectExporter;
-import com.deadlyhunter.modkit.network.ModNetworking;
 import com.deadlyhunter.modkit.network.OpenModkitGuiPacket;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -20,20 +19,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-/**
- *  /modkit                    -> open the GUI
- *  /modkit help               -> show available shortcuts
- *  /modkit setauthor <prefix> -> shortcut
- *  /modkit create <modname>   -> shortcut
- *  /modkit list               -> shortcut
- *  /modkit export <modname>   -> shortcut
- */
 public final class ModkitCommand {
 
     private ModkitCommand() {}
@@ -74,28 +66,25 @@ public final class ModkitCommand {
 
     private static int openGui(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
-        net.minecraft.server.level.ServerPlayer player;
+        ServerPlayer player;
         try {
             player = source.getPlayerOrException();
         } catch (Exception e) {
             sendError(source, "GUI can only be opened by a player.");
             return 0;
         }
-        ModNetworking.CHANNEL.send(
-                PacketDistributor.PLAYER.with(() -> player),
-                new OpenModkitGuiPacket()
-        );
+        PacketDistributor.sendToPlayer(player, new OpenModkitGuiPacket());
         return 1;
     }
 
     private static int help(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack source = ctx.getSource();
-        send(source, "§e=== Modkit Shortcuts ===");
-        send(source, "§7/modkit§r - Open the visual editor");
-        send(source, "§7/modkit setauthor <prefix>§r - Quick set author");
-        send(source, "§7/modkit create <modname>§r - Quick create workspace");
-        send(source, "§7/modkit list§r - List workspaces");
-        send(source, "§7/modkit export <modname>§r - Export to .jar");
+        send(source, "\u00a7e=== Modkit Shortcuts ===");
+        send(source, "\u00a77/modkit\u00a7r - Open the visual editor");
+        send(source, "\u00a77/modkit setauthor <prefix>\u00a7r - Quick set author");
+        send(source, "\u00a77/modkit create <modname>\u00a7r - Quick create workspace");
+        send(source, "\u00a77/modkit list\u00a7r - List workspaces");
+        send(source, "\u00a77/modkit export <modname>\u00a7r - Export to .jar");
         return 1;
     }
 
@@ -124,7 +113,7 @@ public final class ModkitCommand {
         if (!result.success) { sendError(source, result.message); return 0; }
         ProjectInfo info = result.info;
         sendSuccess(source, "Created workspace '" + info.modName + "'");
-        send(source, "§7Mod ID: §f" + info.modId);
+        send(source, "\u00a77Mod ID: \u00a7f" + info.modId);
         sendClickablePath(source, "Location: ", WorkspaceManager.getWorkspacePath(info.modName));
         return 1;
     }
@@ -133,14 +122,14 @@ public final class ModkitCommand {
         CommandSourceStack source = ctx.getSource();
         List<String> workspaces = WorkspaceManager.listWorkspaces();
         if (workspaces.isEmpty()) {
-            send(source, "§7No workspaces yet. Use /modkit to open the GUI.");
+            send(source, "\u00a77No workspaces yet. Use /modkit to open the GUI.");
             return 1;
         }
-        send(source, "§e=== Your Workspaces (" + workspaces.size() + ") ===");
+        send(source, "\u00a7e=== Your Workspaces (" + workspaces.size() + ") ===");
         for (String name : workspaces) {
             ProjectInfo info = WorkspaceManager.loadProject(name);
-            if (info != null) send(source, "§7- §f" + name + " §8(" + info.modId + ")");
-            else send(source, "§7- §f" + name + " §c(corrupt)");
+            if (info != null) send(source, "\u00a77- \u00a7f" + name + " \u00a78(" + info.modId + ")");
+            else send(source, "\u00a77- \u00a7f" + name + " \u00a7c(corrupt)");
         }
         return 1;
     }
@@ -163,25 +152,28 @@ public final class ModkitCommand {
         sendClickablePath(source, "File: ", result.jarPath);
         sendClickablePath(source, "Folder: ", result.jarPath.getParent());
         if (!result.warnings.isEmpty()) {
-            send(source, "§e[!] " + result.warnings.size() + " warning(s):");
-            for (String w : result.warnings) send(source, "§7  - " + w);
+            send(source, "\u00a7e[!] " + result.warnings.size() + " warning(s):");
+            for (String w : result.warnings) send(source, "\u00a77  - " + w);
         }
-        send(source, "§7Drop the .jar into your §fmods§7 folder to use the mod.");
+        send(source, "\u00a77Drop the .jar into your \u00a7fmods\u00a77 folder to use the mod.");
         return 1;
     }
 
     private static void send(CommandSourceStack source, String text) {
         source.sendSuccess(() -> Component.literal(text), false);
     }
+
     private static void sendSuccess(CommandSourceStack source, String text) {
-        source.sendSuccess(() -> Component.literal("§a[Modkit] §r" + text), false);
+        source.sendSuccess(() -> Component.literal("\u00a7a[Modkit] \u00a7r" + text), false);
     }
+
     private static void sendError(CommandSourceStack source, String text) {
-        source.sendFailure(Component.literal("§c[Modkit] " + text).withStyle(ChatFormatting.RED));
+        source.sendFailure(Component.literal("\u00a7c[Modkit] " + text).withStyle(ChatFormatting.RED));
     }
+
     private static void sendClickablePath(CommandSourceStack source, String prefix, Path path) {
         String pathStr = path.toAbsolutePath().toString();
-        MutableComponent line = Component.literal("§7" + prefix + "§r");
+        MutableComponent line = Component.literal("\u00a77" + prefix + "\u00a7r");
         MutableComponent link = Component.literal(pathStr)
                 .withStyle(Style.EMPTY
                         .withColor(ChatFormatting.AQUA)

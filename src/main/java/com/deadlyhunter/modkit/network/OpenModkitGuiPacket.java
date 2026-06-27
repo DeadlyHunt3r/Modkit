@@ -1,25 +1,28 @@
 package com.deadlyhunter.modkit.network;
 
+import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.client.ClientHandler;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public record OpenModkitGuiPacket() implements CustomPacketPayload {
 
-public class OpenModkitGuiPacket {
+    public static final Type<OpenModkitGuiPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "open_modkit_gui"));
 
-    public OpenModkitGuiPacket() {}
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenModkitGuiPacket> STREAM_CODEC =
+            StreamCodec.unit(new OpenModkitGuiPacket());
 
-    public static void encode(OpenModkitGuiPacket pkt, FriendlyByteBuf buf) {
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static OpenModkitGuiPacket decode(FriendlyByteBuf buf) {
-        return new OpenModkitGuiPacket();
-    }
+    public static void handle(final OpenModkitGuiPacket packet, final IPayloadContext context) {
 
-    public static void handle(OpenModkitGuiPacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ClientHandler.openMainScreen();
-        ctx.setPacketHandled(true);
+        context.enqueueWork(ClientHandler::openMainScreen);
     }
 }

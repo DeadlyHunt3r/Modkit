@@ -6,41 +6,28 @@ public class BlockDefinition {
 
     @SerializedName("modkit_format_version")
     public int formatVersion = 1;
-
     @SerializedName("id")
     public String id;
-
     @SerializedName("display_name")
     public String displayName;
-
     @SerializedName("hardness")
     public float hardness = 1.5f;
-
     @SerializedName("resistance")
     public float resistance = 6.0f;
-
     @SerializedName("tool")
     public String tool = "any";
-
     @SerializedName("tool_tier")
     public String toolTier = "wood";
-
     @SerializedName("requires_correct_tool")
     public boolean requiresCorrectTool = false;
-
     @SerializedName("light_emission")
     public int lightEmission = 0;
-
     @SerializedName("sound_group")
     public String soundGroup = "stone";
-
     @SerializedName("friction")
     public float friction = 0.6f;
-
-
     @SerializedName("texture_mode")
     public String textureMode = "all";
-
 
     public static String[] textureSuffixes(String mode) {
         return switch (mode == null ? "all" : mode) {
@@ -51,45 +38,38 @@ public class BlockDefinition {
         };
     }
 
-
     public boolean usesFacing() {
         return "front_other".equals(textureMode) || "front_top_bottom".equals(textureMode);
     }
 
-
     @SerializedName("drop_self")
     public boolean dropSelf = true;
-
-
     @SerializedName("drop_mode")
     public String dropMode = "self";
-
-
     @SerializedName("drop_item")
     public String dropItem = "";
-
-
     @SerializedName("drop_min")
     public int dropMin = 1;
-
-
     @SerializedName("drop_max")
     public int dropMax = 1;
-
-
     @SerializedName("drop_fortune")
     public boolean dropFortune = false;
-
-
     @SerializedName("xp_min")
     public int xpMin = 0;
-
-
     @SerializedName("xp_max")
     public int xpMax = 0;
-
     @SerializedName("tags")
     public java.util.List<String> tags = new java.util.ArrayList<>();
+    @SerializedName("variant_type")
+    public String variantType = null;
+    @SerializedName("texture_source")
+    public String textureSource = null;
+
+    public boolean isVariant() {
+        return variantType != null && !variantType.isBlank();
+    }
+
+    public static final String[] VARIANT_TYPES = { "slab", "stairs", "wall", "fence" };
 
     public String validate() {
         if (id == null || id.isBlank()) return "Missing 'id'";
@@ -127,7 +107,6 @@ public class BlockDefinition {
             case "glass": case "wool": case "sand": case "snow": break;
             default: return "Unknown sound_group: " + soundGroup;
         }
-
 
         if (dropMode == null || dropMode.isBlank()) {
             dropMode = dropSelf ? "self" : "nothing";
@@ -180,12 +159,17 @@ public class BlockDefinition {
         if (xpMax < xpMin) return "xp_max cannot be less than xp_min";
         if (xpMax > 100) return "xp_max cannot exceed 100";
 
-
         dropSelf = "self".equals(dropMode);
 
         if (tags == null) tags = new java.util.ArrayList<>();
         String tagErr = com.deadlyhunter.modkit.content.tag.TagUtil.validateTagList(tags);
         if (tagErr != null) return tagErr;
+
+        if (variantType != null && !variantType.isBlank()) {
+            boolean ok = false;
+            for (String t : VARIANT_TYPES) if (t.equals(variantType)) ok = true;
+            if (!ok) return "unknown variant_type: " + variantType;
+        }
 
         return null;
     }

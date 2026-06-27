@@ -2,97 +2,79 @@ package com.deadlyhunter.modkit.network;
 
 import com.deadlyhunter.modkit.Modkit;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.function.Supplier;
 
-
-public class SetBlockTexturePacket {
+public record SetBlockTexturePacket(String modName, String blockId, String face, byte[] pngData) implements CustomPacketPayload {
 
     private static final int MAX_PNG_BYTES = 1024 * 1024;
-    private static final byte[] PNG_MAGIC = {
-            (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
-    };
-    private static final Set<String> VALID_FACES = Set.of(
-            "", "front", "top", "bottom", "north", "south", "east", "west", "up", "down");
+    private static final byte[] PNG_MAGIC = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+    private static final Set<String> VALID_FACES =
+            Set.of("", "front", "top", "bottom", "north", "south", "east", "west", "up", "down");
 
-    private final String modName;
-    private final String blockId;
-    private final String face;
-    private final byte[] pngData;
-
-    public SetBlockTexturePacket(String modName, String blockId, String face, byte[] pngData) {
-        this.modName = modName;
-        this.blockId = blockId;
-        this.face = face == null ? "" : face;
-        this.pngData = pngData;
+    public SetBlockTexturePacket {
+        if (face == null) face = "";
     }
-
 
     public SetBlockTexturePacket(String modName, String blockId, byte[] pngData) {
         this(modName, blockId, "", pngData);
     }
 
-    public static void encode(SetBlockTexturePacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.modName, 64);
-        buf.writeUtf(pkt.blockId, 64);
-        buf.writeUtf(pkt.face, 16);
-        buf.writeByteArray(pkt.pngData);
+    public static final Type<SetBlockTexturePacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "set_block_texture"));
+
+    public static final StreamCodec<ByteBuf, SetBlockTexturePacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(64),        SetBlockTexturePacket::modName,
+            ByteBufCodecs.stringUtf8(64),        SetBlockTexturePacket::blockId,
+            ByteBufCodecs.stringUtf8(16),        SetBlockTexturePacket::face,
+            ByteBufCodecs.byteArray(MAX_PNG_BYTES), SetBlockTexturePacket::pngData,
+            SetBlockTexturePacket::new
+    );
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static SetBlockTexturePacket decode(FriendlyByteBuf buf) {
-        return new SetBlockTexturePacket(
-                buf.readUtf(64), buf.readUtf(64), buf.readUtf(16),
-                buf.readByteArray(MAX_PNG_BYTES));
-    }
-
-    public static void handle(SetBlockTexturePacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ServerPlayer player = ctx.getSender();
-        if (player == null) { ctx.setPacketHandled(true); return; }
-
-        if (!player.hasPermissions(2)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] No permission to upload textures."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        String error = trySave(pkt);
-        if (error != null) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] Texture upload failed: " + error));
-        } else {
-            String faceInfo = pkt.face.isEmpty() ? "" : " (" + pkt.face + ")";
-            player.sendSystemMessage(Component.literal(
-                    "§a[Modkit] Texture set for block '" + pkt.blockId + "'" + faceInfo + "."));
-        }
-        ctx.setPacketHandled(true);
+    public static void handle(SetBlockTexturePacket pkt, IPayloadContext context) {
+        ServerActions.asOp(context, "\u00a7c[Modkit] No permission to upload textures.", player -> {
+            String error = trySave(pkt);
+            if (error != null) {
+                player.sendSystemMessage(Component.literal("\u00a7c[Modkit] Texture upload failed: " + error));
+            } else {
+                String faceInfo = pkt.face().isEmpty() ? "" : " (" + pkt.face() + ")";
+                player.sendSystemMessage(Component.literal(
+                        "\u00a7a[Modkit] Texture set for block '" + pkt.blockId() + "'" + faceInfo + "."));
+            }
+        });
     }
 
     private static String trySave(SetBlockTexturePacket pkt) {
-        if (!WorkspaceManager.exists(pkt.modName)) return "Workspace does not exist.";
-        if (!pkt.blockId.matches("[a-z0-9_]{1,40}")) return "Invalid block id.";
-        if (!VALID_FACES.contains(pkt.face)) return "Invalid face suffix.";
+        if (!WorkspaceManager.exists(pkt.modName())) return "Workspace does not exist.";
+        if (!pkt.blockId().matches("[a-z0-9_]{1,40}")) return "Invalid block id.";
+        if (!VALID_FACES.contains(pkt.face())) return "Invalid face suffix.";
 
-        if (pkt.pngData == null || pkt.pngData.length < PNG_MAGIC.length) return "Not a valid PNG (too short).";
+        if (pkt.pngData() == null || pkt.pngData().length < PNG_MAGIC.length) return "Not a valid PNG (too short).";
         for (int i = 0; i < PNG_MAGIC.length; i++) {
-            if (pkt.pngData[i] != PNG_MAGIC[i]) return "Not a valid PNG (wrong magic bytes).";
+            if (pkt.pngData()[i] != PNG_MAGIC[i]) return "Not a valid PNG (wrong magic bytes).";
         }
 
-        String fileName = pkt.face.isEmpty() ? pkt.blockId + ".png" : pkt.blockId + "_" + pkt.face + ".png";
-        Path target = WorkspaceManager.getWorkspacePath(pkt.modName)
-                .resolve("assets").resolve("textures").resolve("block")
-                .resolve(fileName);
-
+        String fileName = pkt.face().isEmpty() ? pkt.blockId() + ".png" : pkt.blockId() + "_" + pkt.face() + ".png";
+        Path target = WorkspaceManager.getWorkspacePath(pkt.modName())
+                .resolve("assets").resolve("textures").resolve("block").resolve(fileName);
         try {
             Files.createDirectories(target.getParent());
-            Files.write(target, pkt.pngData);
+            Files.write(target, pkt.pngData());
             Modkit.LOGGER.info("[Modkit] Saved block texture: {}", target);
             return null;
         } catch (IOException e) {

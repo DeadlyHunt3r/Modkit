@@ -1,13 +1,15 @@
 package com.deadlyhunter.modkit.content.armor;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
+
 import java.util.List;
 
 public class ModkitArmorItem extends ArmorItem {
@@ -15,9 +17,8 @@ public class ModkitArmorItem extends ArmorItem {
     private final ArmorSetDefinition setDef;
     private final String pieceType;
 
-    public ModkitArmorItem(ArmorSetDefinition setDef, ModkitArmorMaterial material,
-                            String pieceType) {
-        super(material, typeFor(pieceType), buildProperties(setDef));
+    public ModkitArmorItem(ArmorSetDefinition setDef, Holder<ArmorMaterial> material, int durabilityMultiplier, String pieceType) {
+        super(material, typeFor(pieceType), buildProperties(setDef, typeFor(pieceType), durabilityMultiplier));
         this.setDef = setDef;
         this.pieceType = pieceType;
     }
@@ -34,8 +35,10 @@ public class ModkitArmorItem extends ArmorItem {
         };
     }
 
-    private static Properties buildProperties(ArmorSetDefinition def) {
-        return new Properties().rarity(parseRarity(def.rarity));
+    private static Properties buildProperties(ArmorSetDefinition def, Type type, int durabilityMultiplier) {
+        return new Properties()
+                .rarity(parseRarity(def.rarity))
+                .durability(type.getDurability(durabilityMultiplier));
     }
 
     private static Rarity parseRarity(String s) {
@@ -64,8 +67,8 @@ public class ModkitArmorItem extends ArmorItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
         if (setDef.tooltipLines != null) {
             for (String line : setDef.tooltipLines) {
                 if (line != null && !line.isBlank()) {

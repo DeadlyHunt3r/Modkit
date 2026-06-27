@@ -23,7 +23,7 @@ public final class ModsTomlGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("""
                 modLoader="lowcodefml"
-                loaderVersion="[47,)"
+                loaderVersion="[4,)"
                 license="%s"
 
                 [[mods]]
@@ -37,22 +37,22 @@ public final class ModsTomlGenerator {
                 credits="Created with Modkit"
 
                 [[dependencies.%s]]
-                    modId="forge"
-                    mandatory=true
-                    versionRange="[47,)"
+                    modId="neoforge"
+                    type="required"
+                    versionRange="[21.1,)"
                     ordering="NONE"
                     side="BOTH"
 
                 [[dependencies.%s]]
                     modId="minecraft"
-                    mandatory=true
-                    versionRange="[1.20.1,1.21)"
+                    type="required"
+                    versionRange="[1.21.1,1.22)"
                     ordering="NONE"
                     side="BOTH"
 
                 [[dependencies.%s]]
                     modId="modkit"
-                    mandatory=true
+                    type="required"
                     versionRange="[0.1,)"
                     ordering="AFTER"
                     side="BOTH"
@@ -74,7 +74,7 @@ public final class ModsTomlGenerator {
                 if (m == null) continue;
                 String id = m.trim().toLowerCase();
                 if (id.isEmpty()) continue;
-                if (id.equals("minecraft") || id.equals("forge") || id.equals("modkit")) continue;
+                if (id.equals("minecraft") || id.equals("neoforge") || id.equals("forge") || id.equals("modkit")) continue;
                 if (id.equals(info.modId)) continue;
                 if (!id.matches("[a-z0-9_.-]+")) continue;
                 clean.add(id);
@@ -84,7 +84,7 @@ public final class ModsTomlGenerator {
 
                         [[dependencies.%s]]
                             modId="%s"
-                            mandatory=false
+                            type="optional"
                             versionRange="*"
                             ordering="AFTER"
                             side="BOTH"

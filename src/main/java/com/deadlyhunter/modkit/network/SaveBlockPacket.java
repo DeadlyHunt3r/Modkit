@@ -5,85 +5,69 @@ import com.deadlyhunter.modkit.content.block.BlockDefinition;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraft.network.FriendlyByteBuf;
+import io.netty.buffer.ByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.function.Supplier;
 
-public class SaveBlockPacket {
+public record SaveBlockPacket(String modName, String blockId, String json) implements CustomPacketPayload {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private final String modName;
-    private final String blockId;
-    private final String json;
+    public static final Type<SaveBlockPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Modkit.MODID, "save_block"));
 
-    public SaveBlockPacket(String modName, String blockId, String json) {
-        this.modName = modName;
-        this.blockId = blockId;
-        this.json = json;
+    public static final StreamCodec<ByteBuf, SaveBlockPacket> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(64),    SaveBlockPacket::modName,
+            ByteBufCodecs.stringUtf8(64),    SaveBlockPacket::blockId,
+            ByteBufCodecs.stringUtf8(32768), SaveBlockPacket::json,
+            SaveBlockPacket::new
+    );
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
-    public static void encode(SaveBlockPacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.modName, 64);
-        buf.writeUtf(pkt.blockId, 64);
-        buf.writeUtf(pkt.json, 32768);
-    }
-
-    public static SaveBlockPacket decode(FriendlyByteBuf buf) {
-        return new SaveBlockPacket(buf.readUtf(64), buf.readUtf(64), buf.readUtf(32768));
-    }
-
-    public static void handle(SaveBlockPacket pkt, Supplier<NetworkEvent.Context> ctxSup) {
-        NetworkEvent.Context ctx = ctxSup.get();
-        ServerPlayer player = ctx.getSender();
-        if (player == null) { ctx.setPacketHandled(true); return; }
-
-        if (!player.hasPermissions(2)) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] No permission to edit projects."));
-            ctx.setPacketHandled(true);
-            return;
-        }
-
-        String error = trySave(pkt);
-        if (error != null) {
-            player.sendSystemMessage(Component.literal("§c[Modkit] Save failed: " + error));
-        } else {
-            player.sendSystemMessage(Component.literal("§a[Modkit] Saved block '" + pkt.blockId + "'."));
-        }
-        ctx.setPacketHandled(true);
+    public static void handle(SaveBlockPacket pkt, IPayloadContext context) {
+        ServerActions.asOp(context, "\u00a7c[Modkit] No permission to edit projects.", player -> {
+            String error = trySave(pkt);
+            player.sendSystemMessage(Component.literal(error != null
+                    ? "\u00a7c[Modkit] Save failed: " + error
+                    : "\u00a7a[Modkit] Saved block '" + pkt.blockId() + "'."));
+        });
     }
 
     private static String trySave(SaveBlockPacket pkt) {
-        if (!WorkspaceManager.exists(pkt.modName)) {
-            return "Workspace '" + pkt.modName + "' does not exist.";
+        if (!WorkspaceManager.exists(pkt.modName())) {
+            return "Workspace '" + pkt.modName() + "' does not exist.";
         }
 
         BlockDefinition def;
         try {
-            def = GSON.fromJson(pkt.json, BlockDefinition.class);
+            def = GSON.fromJson(pkt.json(), BlockDefinition.class);
         } catch (Exception e) {
             return "Invalid JSON: " + e.getMessage();
         }
         if (def == null) return "Block definition is empty.";
-        if (!pkt.blockId.equals(def.id)) {
-            return "Block id mismatch: packet=" + pkt.blockId + " json=" + def.id;
+        if (!pkt.blockId().equals(def.id)) {
+            return "Block id mismatch: packet=" + pkt.blockId() + " json=" + def.id;
         }
         String validationError = def.validate();
         if (validationError != null) return validationError;
 
-        String prettyJson = GSON.toJson(def);
-        Path target = WorkspaceManager.getWorkspacePath(pkt.modName)
+        Path target = WorkspaceManager.getWorkspacePath(pkt.modName())
                 .resolve("modkit").resolve("blocks").resolve(def.id + ".json");
-
         try {
             Files.createDirectories(target.getParent());
-            Files.writeString(target, prettyJson);
+            Files.writeString(target, GSON.toJson(def));
             Modkit.LOGGER.info("[Modkit] Saved block file: {}", target);
             return null;
         } catch (IOException e) {

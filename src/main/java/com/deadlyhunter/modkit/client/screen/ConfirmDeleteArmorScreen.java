@@ -1,7 +1,7 @@
 package com.deadlyhunter.modkit.client.screen;
 
 import com.deadlyhunter.modkit.network.DeleteArmorPacket;
-import com.deadlyhunter.modkit.network.ModNetworking;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -45,7 +45,7 @@ public class ConfirmDeleteArmorScreen extends ModkitBaseScreen {
     }
 
     private void confirmDelete() {
-        ModNetworking.CHANNEL.sendToServer(new DeleteArmorPacket(modName, setId));
+        PacketDistributor.sendToServer(new DeleteArmorPacket(modName, setId));
         ArmorListScreen list = editorParent.getListParent();
         list.onArmorChanged();
         this.minecraft.setScreen(list);

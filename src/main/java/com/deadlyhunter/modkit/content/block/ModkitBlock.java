@@ -3,8 +3,10 @@ package com.deadlyhunter.modkit.content.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.LevelReader;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.util.valueproviders.UniformInt;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -29,18 +31,20 @@ public class ModkitBlock extends Block {
     }
 
     @Override
-    public int getExpDrop(BlockState state, LevelReader level, RandomSource random,
-                          BlockPos pos, int fortuneLevel, int silkTouchLevel) {
-
-        if (silkTouchLevel > 0) return 0;
-        if (definition.xpMax <= 0) return 0;
-
-        int min = Math.max(0, definition.xpMin);
-        int max = Math.max(min, definition.xpMax);
-        if (min == max) return min;
-        return min + random.nextInt(max - min + 1);
+    protected void spawnAfterBreak(BlockState state, ServerLevel level, BlockPos pos, ItemStack stack, boolean dropExperience) {
+        super.spawnAfterBreak(state, level, pos, stack, dropExperience);
+        if (dropExperience) {
+            IntProvider xp = xpProvider(definition);
+            if (xp != null) this.tryDropExperience(level, pos, stack, xp);
+        }
     }
 
+    static IntProvider xpProvider(BlockDefinition def) {
+        if (def.xpMax <= 0) return null;
+        int min = Math.max(0, def.xpMin);
+        int max = Math.max(min, def.xpMax);
+        return UniformInt.of(min, max);
+    }
 
     static BlockBehaviour.Properties buildPropertiesFor(BlockDefinition def) {
         return buildProperties(def);

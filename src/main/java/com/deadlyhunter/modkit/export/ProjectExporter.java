@@ -6,8 +6,7 @@ import com.deadlyhunter.modkit.content.item.ItemDefinition;
 import com.deadlyhunter.modkit.core.ProjectInfo;
 import com.deadlyhunter.modkit.core.WorkspaceManager;
 import com.google.gson.Gson;
-import net.minecraftforge.fml.loading.FMLPaths;
-
+import net.neoforged.fml.loading.FMLPaths;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -54,15 +53,14 @@ public final class ProjectExporter {
             try (ZipOutputStream zip = new ZipOutputStream(
                     Files.newOutputStream(tmpJar, StandardOpenOption.CREATE_NEW))) {
 
-
                 writeEntry(zip, "META-INF/MANIFEST.MF", ManifestGenerator.generate(info));
-                java.util.Set<String> loadAfterMods = new java.util.LinkedHashSet<>();
+                Set<String> loadAfterMods = new java.util.LinkedHashSet<>();
                 for (com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition ov : overrides) {
                     if (ov.targetNamespace != null && !ov.isVanillaTarget()) {
                         loadAfterMods.add(ov.targetNamespace);
                     }
                 }
-                writeEntry(zip, "META-INF/mods.toml", ModsTomlGenerator.generate(info, loadAfterMods));
+                writeEntry(zip, "META-INF/neoforge.mods.toml", ModsTomlGenerator.generate(info, loadAfterMods));
                 writeEntry(zip, "pack.mcmeta", PackMcmetaGenerator.generate(info));
 
 
@@ -176,8 +174,16 @@ public final class ProjectExporter {
 
                 Path workspaceBlockTexDir = workspace.resolve("assets").resolve("textures").resolve("block");
                 for (BlockDefinition def : blocks) {
+                    if (def.isVariant()) {
+                        for (VariantModelGenerator.Asset a : VariantModelGenerator.generate(info.modId, def)) {
+                            writeEntry(zip, a.path(), a.json());
+                            writtenAssetPaths.add(a.path().replace("assets/" + info.modId + "/", ""));
+                        }
+                        continue;
+                    }
 
-                    java.util.Set<String> presentSuffixes = new java.util.HashSet<>();
+
+                    Set<String> presentSuffixes = new HashSet<>();
                     for (String suffix : BlockDefinition.textureSuffixes(def.textureMode)) {
                         String fileName = suffix.isEmpty() ? def.id + ".png" : def.id + "_" + suffix + ".png";
                         Path userTex = workspaceBlockTexDir.resolve(fileName);
@@ -215,13 +221,13 @@ public final class ProjectExporter {
                 copyDirIntoZip(zip, workspace.resolve("data"), "data/");
                 copyDirIntoZip(zip, workspace.resolve("modkit"), "modkit/");
 
-                java.util.Map<String, java.util.List<String>> mergedTags = new java.util.LinkedHashMap<>();
+                java.util.Map<String, List<String>> mergedTags = new java.util.LinkedHashMap<>();
 
                 java.util.Map<String, String> autoBlockTags =
                         BlockTagsGenerator.generate(info.modId, blocks);
                 for (java.util.Map.Entry<String, String> e : autoBlockTags.entrySet()) {
                     for (String v : extractTagValues(e.getValue())) {
-                        mergedTags.computeIfAbsent(e.getKey(), k -> new java.util.ArrayList<>()).add(v);
+                        mergedTags.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(v);
                     }
                 }
 
@@ -234,7 +240,7 @@ public final class ProjectExporter {
                 }
 
 
-                java.util.Set<String> blockIds = new java.util.HashSet<>();
+                Set<String> blockIds = new HashSet<>();
                 for (BlockDefinition b : blocks) blockIds.add(b.id);
 
                 for (com.deadlyhunter.modkit.content.ore.OreDefinition ore : ores) {
@@ -267,7 +273,7 @@ public final class ProjectExporter {
                 }
 
 
-                java.util.Set<String> usedOverridePaths = new java.util.HashSet<>();
+                Set<String> usedOverridePaths = new HashSet<>();
                 for (com.deadlyhunter.modkit.content.recipe.RecipeOverrideDefinition ov : overrides) {
                     try {
                         String path = RecipeOverrideGenerator.getOverridePath(ov);
@@ -284,17 +290,17 @@ public final class ProjectExporter {
                 }
 
 
-                java.util.List<TagJsonGenerator.TagFile> userTagFiles = new java.util.ArrayList<>();
+                List<TagJsonGenerator.TagFile> userTagFiles = new ArrayList<>();
                 userTagFiles.addAll(TagJsonGenerator.generateItemTags(info.modId, items));
                 userTagFiles.addAll(TagJsonGenerator.generateBlockTags(info.modId, blocks));
                 for (TagJsonGenerator.TagFile tf : userTagFiles) {
                     for (String v : extractTagValues(tf.json())) {
-                        mergedTags.computeIfAbsent(tf.path(), k -> new java.util.ArrayList<>()).add(v);
+                        mergedTags.computeIfAbsent(tf.path(), k -> new ArrayList<>()).add(v);
                     }
                 }
 
 
-                for (java.util.Map.Entry<String, java.util.List<String>> e : mergedTags.entrySet()) {
+                for (java.util.Map.Entry<String, List<String>> e : mergedTags.entrySet()) {
                     java.util.LinkedHashSet<String> unique = new java.util.LinkedHashSet<>(e.getValue());
                     StringBuilder sb = new StringBuilder();
                     sb.append("{\n  \"replace\": false,\n  \"values\": [\n");
@@ -330,7 +336,6 @@ public final class ProjectExporter {
     public static Path getExportsDir() {
         return FMLPaths.GAMEDIR.get().resolve("modkit").resolve("exports");
     }
-
 
     private static List<ItemDefinition> loadItems(Path workspace) {
         return loadDefs(workspace.resolve("modkit").resolve("items"), ItemDefinition.class, ItemDefinition::validate);
@@ -398,8 +403,9 @@ public final class ProjectExporter {
         return result;
     }
 
-    private static java.util.List<String> extractTagValues(String tagJson) {
-        java.util.List<String> values = new java.util.ArrayList<>();
+
+    private static List<String> extractTagValues(String tagJson) {
+        List<String> values = new ArrayList<>();
         if (tagJson == null) return values;
         try {
             com.google.gson.JsonObject obj =

@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 
@@ -93,7 +94,8 @@ public class RecipePickerScreen extends ModkitBaseScreen {
             RecipeManager rm = mc.level.getRecipeManager();
             var registryAccess = mc.level.registryAccess();
 
-            for (Recipe<?> recipe : rm.getRecipes()) {
+            for (RecipeHolder<?> holder : rm.getRecipes()) {
+                Recipe<?> recipe = holder.value();
                 ItemStack result;
                 try {
                     result = recipe.getResultItem(registryAccess);
@@ -102,7 +104,7 @@ public class RecipePickerScreen extends ModkitBaseScreen {
                 }
                 if (result == null || result.isEmpty()) continue;
 
-                ResourceLocation resultLoc = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(result.getItem());
+                ResourceLocation resultLoc = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(result.getItem());
                 if (resultLoc == null) continue;
                 String resultId = resultLoc.toString();
                 String resultName = result.getHoverName().getString();
@@ -111,7 +113,7 @@ public class RecipePickerScreen extends ModkitBaseScreen {
                         || resultName.toLowerCase().contains(query);
                 if (!matches) continue;
 
-                ResourceLocation recipeId = recipe.getId();
+                ResourceLocation recipeId = holder.id();
                 String typeLabel = typeLabel(recipe);
                 results.add(new RecipeEntry(
                         recipeId.getNamespace(), recipeId.getPath(),
@@ -213,14 +215,14 @@ public class RecipePickerScreen extends ModkitBaseScreen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (results.size() > ROWS_VISIBLE) {
-            int ns = scroll - (int) Math.signum(delta);
+            int ns = scroll - (int) Math.signum(scrollY);
             ns = Math.max(0, Math.min(results.size() - ROWS_VISIBLE, ns));
             if (ns != scroll) { scroll = ns; rebuildResultButtons(); }
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, delta);
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     private static String truncate(String s, int max) {

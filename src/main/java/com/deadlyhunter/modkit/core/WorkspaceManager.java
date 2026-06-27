@@ -3,7 +3,7 @@ package com.deadlyhunter.modkit.core;
 import com.deadlyhunter.modkit.Modkit;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.nio.file.Files;
